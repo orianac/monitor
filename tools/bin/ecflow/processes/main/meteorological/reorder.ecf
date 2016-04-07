@@ -1,0 +1,15 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+This script reorders the dimensions of the netcdf files 
+previously downloaded, so that they can be read by ncview and 
+tonic. Outputs are saved in %MET_LOC% as defined in config file
+%end
+
+echo "Today is $(date)"
+
+python %ECF_HOME%/processes/main/meteorological/reorder.py %CFG_FILE% '%MET_LOC%'
+
+
+%include <tail.h>

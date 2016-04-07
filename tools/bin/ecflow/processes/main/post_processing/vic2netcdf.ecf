@@ -1,0 +1,22 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Change VIC ouput (ascii) to one netcdf file
+%end
+
+echo "Today is $(date)"
+
+cd %TONIC_CFG%
+cp VIC2nc.original.cfg VIC2nc.cfg
+
+cd %SCRIPTS%
+
+python change_cfg.py '%SCRIPTS%' '%VIC_OUTPUT%' '%VIC_NETCDF%' '%TONIC_CFG%'
+
+cd %TONIC%
+
+%ENVIRON%/vic_utils vic2netcdf %TONIC_CFG%/VIC2nc.cfg
+
+%include <tail.h>
+

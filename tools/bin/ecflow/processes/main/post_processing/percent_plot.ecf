@@ -1,0 +1,15 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Creates the percentile plot for soil liquid, swe, and soil liquid + swe. 
+%end
+
+echo "Today is $(date)"
+
+#execute python scripts once complete
+#python <>.py
+
+%include <tail.h>
+
+
