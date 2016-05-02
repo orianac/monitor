@@ -2,7 +2,9 @@
 ###### plotting swe percentiles
 ###### usage: <python> <swe_plot.py> <configuration.cfg>
 
-###### Creates...
+###### Creates a SWE percential spatial plot 
+###### Compares one day of VIC output to 30 years of data
+###### Using the Weibull Plotting Position
 
 from datetime import datetime, timedelta
 import numpy as np
@@ -95,7 +97,9 @@ for i in range(0,len(latitude)):
 
     lat = latitude[i]
     lon = longitude[i]
-    #add to configuration file this location
+    #read in sorted list of cdf values  
+    #if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
+    #this is done to make creating the xarray dataset easier later on
     try: 
         cdf = pd.read_csv('%s/%s/%s_%s' %(cdf_loc, month_day, lat, lon), 
                           index_col=None, delimiter=None, header=None)
@@ -104,7 +108,6 @@ for i in range(0,len(latitude)):
         
         #10mm threshold
         if (value < 10):
-            #combine = (lat, lon, percentile)
             combine = (lat, lon)
             d.append(combine)
         else:    
@@ -126,19 +129,19 @@ for i in range(0,len(latitude)):
                     percentile = (min_q)
                     combine = (lat, lon, percentile)
                     d.append(combine)
-    #if there is no cdf than that values is a NaN
     except IOError:
         percentile = value
         combine = (lat, lon)
         d.append(combine)
 
+#Dictionary to DataFrame to Dataset
 df = pd.DataFrame(d, columns=["Latitude", "Longitude", "Percentile"])
 a = df['Percentile'].values
 new = a.reshape(195, 245)
 
 dsx = xr.Dataset({'percentile': (['lat', 'lon'], new)}, coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
-
+#plotting
 plt.figure(figsize=(8,8))
 
 ax = plt.axes(projection=ccrs.Mercator(central_longitude=-120, min_latitude=40.7, max_latitude=49.3, globe=None)) 
@@ -197,7 +200,7 @@ cbar.set_ticklabels(labels)
 cbar.ax.tick_params(labelsize=12)
 cbar.ax.set_xlabel('percentile', fontsize=15)
 
-print("saving plot")
+#save figure
 plt.savefig('%s/SWE_%s' %(plot_loc, date_ncfile), format='png', bbox='tight')
 
 
