@@ -2,13 +2,17 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Creates the percentile plot for soil liquid, swe, and soil liquid + swe. 
+Creates the percentile plots for soil liquid, swe, and soil liquid + swe. 
 %end
 
 echo "Today is $(date)"
 
 #execute python scripts once complete
-#python <>.py
+python swe_plot.py %CFG_FILE%
+
+#python soil_moist_plot.py %CFG_FILE%
+#python total_moist_plot.py %CFG_FILE%
+
 
 %include <tail.h>
 
