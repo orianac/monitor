@@ -55,10 +55,9 @@ def main():
     run_dir = config_dict['VIC']['RunDir']
     start_date = config_dict['DATE']['Start_Date']
     end_date = config_dict['DATE']['End_Date']	
-	
+    executable = config_dict['VIC']['Executable']
     
-    executable = '/home/mbapt/VIC/src/vicNl'
-
+    #set up vic to be run
     vic = VIC(executable)
 
 
@@ -76,22 +75,24 @@ def main():
         logger.debug('started pool with {} processes'.format(cores))
 
 
-
+    #if only reading in one soil lat lon list file, then remove the first for loop (log_dir, soillist will need to be changed)
     global_file_list = []
     log_dir_list = []
+
     for ens in range(1, num_ens + 1):
-	print(ens)
         log_dir = '{0}{1:04d}'.format(log_dir_root, ens)
 	os_tools.make_dirs(log_dir)
+	#soil_ens = soil list file name
 	soil_ens = "{0:0=4d}".format(ens)
 	soillist = '{0}/pnw.{1}'.format(soil_list,soil_ens)
+	#soil file list
 	ll_csv = pd.read_csv(soillist, sep=' ', header=None)
-	print(soil_ens)
-	print(soillist)
 	latitude = ll_csv[0]
 	longitude = ll_csv[1]
+
 	x = int(len(latitude))	
 
+	#loop through each lat/lon to create new global parameter file for each grid cell
 	for i in range(0, x):
 	    lat=str(latitude[i])
 	    lon=str(longitude[i])	
@@ -99,6 +100,7 @@ def main():
                 run_dir, 'control_{0}_{1}'.format(lat, lon))
 	    
 	    model_tools.copy_clean_vic_config(global_file_template, global_file_cell, header=None)
+	    #using the configuration file, replace the "missing" data in each global parameter file
             replace(global_file_cell, 'SOILROOT', soil_root)
 	    replace(global_file_cell, 'LATITUDE', lat)
 	    replace(global_file_cell, 'LONGITUDE', lon)
@@ -110,10 +112,10 @@ def main():
 	    replace(global_file_cell, 'END_YEAR', model_end_year)
 	    replace(global_file_cell, 'END_MONTH', model_end_month)
 	    replace(global_file_cell, 'END_DAY', model_end_day)
-            global_file_list.append(global_file_cell)
+            #creates a list of the pathways for each global parameter file to be referenced by vic.run
+	    global_file_list.append(global_file_cell)
             log_dir_list.append(log_dir)
-    print(log_dir_list)
-    print(global_file_list)		
+    #runs vic
     if cores > 1:
         try:
             logger.info('about to apply_async')

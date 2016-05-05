@@ -58,7 +58,7 @@ file = "pnw_daily_run.%s-%s.nc" %(date_ncfile, date_ncfile)
 ds = xr.open_dataset(os.path.join(direc,file))
 
 
-#create list of all latitudes and longitudes for full recentangle
+#create list of all latitudes and longitudes for full rectangle
 un_lat = ds['lat'].values
 un_lon = ds['lon'].values
 
