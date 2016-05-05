@@ -3,7 +3,6 @@
 %include <head.h>
 %manual
 Changes kelvin to celcius
-Checks that all the parameters are the same length and adjusts if they are not
 Combine the individual ascii files for precip, tmax, tmin, and wind 
 for each grid cell
 Outputs are saved in %MET_LOC% as defined in config file
@@ -11,6 +10,6 @@ Outputs are saved in %MET_LOC% as defined in config file
 
 echo "Today is $(date)"
 
-python %ECF_HOME%/processes/main/meteorological/combine.py '%MET_LOC%'
+python %ECF_HOME%/processes/main/meteorological/combine.py %CFG_FILE%
 
 %include <tail.h>

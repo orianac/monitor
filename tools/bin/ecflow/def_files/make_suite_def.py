@@ -35,10 +35,6 @@ def main():
         suite = add_dependencies(suite, skey, suite_dict)
         suite.add_variable('SYS_PATH', os.environ['PATH'])
 
-        #for t in range(suite_dict[skey]['NTasks']):
-        #    tkey = 'S{0}_T{1}'.format(s, t)
-        #    task = suite.add_task(suite_dict[tkey]['Name'])
-        #    task = add_dependencies(task, tkey, suite_dict)
         for f in range(suite_dict[skey]['NFamilies']):
             fkey = 'S{0}_F{1}'.format(s, f)
             family = suite.add_family(suite_dict[fkey]['Name'])
@@ -55,14 +51,6 @@ def main():
                     tkey = 'S{0}_F{1}_F{2}_T{3}'.format(s, f, ff, t)
                     task = ffamily.add_task(suite_dict[tkey]['Name'])
                     task = add_dependencies(task, tkey, suite_dict)
-               # for fff in range(suite_dict[ffkey]['NFamilies']):
-               #     fffkey = 'S{0}_F{1}_F{2}_F{3}'.format(s, f, ff,fff)
-               #     fffamily = ffamily.add_family(suite_dict[fffkey]['Name'])
-               #     fffamily = add_dependencies(fffamily, fffkey, suite_dict)
-               #     for t in range(suite_dict[fffkey]['NTasks']):
-               #         tkey = '{0}_T{1}'.format(fffkey, t)
-               #         task = fffamily.add_task(suite_dict[tkey]['Name'])
-               #         task = add_dependencies(task, tkey, suite_dict)
 
     logger.info(defs)
     if suite_dict['MAIN']['MakeDummyScripts'] == True:

@@ -48,7 +48,8 @@ date_unformat = datetime.now() - timedelta(days=N)
 
 date = date_unformat.strftime('%Y-%m-%d')
 date_ncfile = date_unformat.strftime('%Y%m%d')
-month_day = date_unformat.strftime("%B_%d")
+month_day = date_unformat.strftime("%B_%-d")
+
 
 
 #read VIC output that has been converted to a netcdf file 
@@ -101,14 +102,13 @@ for i in range(0,len(latitude)):
     #if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
     #this is done to make creating the xarray dataset easier later on
     try: 
-        cdf = pd.read_csv('%s/%s/%s_%s' %(cdf_loc, month_day, lat, lon), 
+	cdf = pd.read_csv('%s/%s/%s_%s' %(cdf_loc, month_day, lat, lon), 
                           index_col=None, delimiter=None, header=None)
-        
         x = cdf[0]
         
-        #10mm threshold
+	#10mm threshold
         if (value < 10):
-            combine = (lat, lon)
+	    combine = (lat, lon)
             d.append(combine)
         else:    
         
@@ -129,8 +129,8 @@ for i in range(0,len(latitude)):
                     percentile = (min_q)
                     combine = (lat, lon, percentile)
                     d.append(combine)
-    except IOError:
-        percentile = value
+    except IOError: 
+	percentile = value
         combine = (lat, lon)
         d.append(combine)
 

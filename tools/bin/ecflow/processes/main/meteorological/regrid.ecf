@@ -2,24 +2,13 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Changes the grid from 1/24 to 1/16 and reduces the domain
-from CONUS to PNW.
+Runs regrid.py
 Outputs are saved in %MET_LOC% as defined in config file
 %end
 echo "Today is $(date)"
 
-#change directory to where the metdata is stored
-cd %MET_LOC%
+python %ECF_HOME%/processes/main/meteorological/regrid.py %CFG_FILE%
 
-rm pr_2016.regrid.nc||echo "Cannot remove precip" 
-rm tmmn_2016.regrid.nc||echo "Cannot remove tmin" 
-rm tmmx_2016.regrid.nc||echo "Cannot remove tmax" 
-rm vs_2016.regrid.nc||echo "Cannot remove wind"
-
-cdo remapcon,grid_info pr_2016.reorder.nc pr_2016.regrid.nc
-cdo remapcon,grid_info tmmn_2016.reorder.nc tmmn_2016.regrid.nc
-cdo remapcon,grid_info tmmx_2016.reorder.nc tmmx_2016.regrid.nc
-cdo remapcon,grid_info vs_2016.reorder.nc vs_2016.regrid.nc
 
 %include <tail.h>
 

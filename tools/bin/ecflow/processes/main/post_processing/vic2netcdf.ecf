@@ -7,14 +7,8 @@ Change VIC ouput (ascii) to one netcdf file
 
 echo "Today is $(date)"
 
-cd %TONIC_CFG%
-cp VIC2nc.original.cfg VIC2nc.cfg
 
-cd %SCRIPTS%
-
-python change_cfg.py '%SCRIPTS%' '%VIC_OUTPUT%' '%VIC_NETCDF%' '%TONIC_CFG%'
-
-cd %TONIC%
+python %ECF_HOME%/processes/main/post_processing/change_cfg.py %CFG_FILE% 
 
 %ENVIRON%/vic_utils vic2netcdf %TONIC_CFG%/VIC2nc.cfg
 

@@ -1,0 +1,15 @@
+name: monitor_envr_req
+requirements:
+-python=2.7.11
+-numpy=1.11.0-py27_0
+-pandas=0.18.0-np111py27_0
+-xarray=0.7.2-py27_0
+-netcdf4=1.2.2-np111py27_0
+-scipy=0.17.0-np110py27_2
+-configobj=5.0.5-py27_0
+-matplotlib=1.5.1-np110py27_0
+-basemap=1.0.7-np110py27_0
+-cartopy=0.13.1-np110py27_0
+-curl=7.45.0-0
+-openssl=1.0.2g-0
+
