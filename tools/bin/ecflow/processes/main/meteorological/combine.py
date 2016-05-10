@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#####combine.py
-#####usage: <python> <combine.py> <configuration.cfg>
-
-###### This script runs tocel_combine.py
-
+"""
+combine.py
+usage: <python> <combine.py> <configuration.cfg>
+This script runs tocel_combine.py
+"""
 import sys
 import pandas as pd
 import numpy as np
@@ -51,12 +51,9 @@ def main():
         	pool = mp.Pool(processes=cores)
         	logger.debug('started pool with {} processes'.format(cores))
 
-
-
 	#read in list of lat/lons
-	lat_lon = np.genfromtxt('%s' %(forcing_names), dtype='str')
+	lat_lon = np.genfromtxt(forcing_names, dtype='str')
 
-	lat_lons=[]
 	lat_lons_list=[]
 	log_dir_list = []
 
@@ -72,7 +69,6 @@ def main():
 		replace(lat_lons, 'PRECIP_DIREC', precip_dir)
 		replace(lat_lons, 'WIND_DIREC', wind_dir)
 		replace(lat_lons, 'FINAL_DIREC', final_dir)
-		lat_lons_list.append(lat_lons)
 		log_dir_list.append(log_dir)
 
 	#run each tocel_combine script using subprocess
@@ -87,7 +83,7 @@ def main():
              		logger.info(e)
 
 	else:
-        	print('core set to 1')
+		logger.info('core set to 1')
 		logger.info('about to apply_async')
                 for i in lat_lons_list:
                         run_tocel_combine = ['python', 'i' ]
@@ -95,8 +91,7 @@ def main():
                         pool.apply_async(proc_subprocess, args=(run_tocel_combine, run_dir))
 	
 	#remove the tocel_combine scripts from run_dir		
-	for i in lat_lons_list:
-		os.remove('%s' %(i))
+	map(os.remove, lat_lons_list)
 
 	#end multiprocessor
 	if cores > 1:

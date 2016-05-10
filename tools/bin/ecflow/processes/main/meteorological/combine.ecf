@@ -2,7 +2,7 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Changes kelvin to celcius
+Changes kelvin to celsius
 Combine the individual ascii files for precip, tmax, tmin, and wind 
 for each grid cell
 Outputs are saved in %MET_LOC% as defined in config file

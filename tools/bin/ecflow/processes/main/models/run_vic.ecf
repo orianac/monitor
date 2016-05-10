@@ -2,7 +2,7 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Runs vic using the muultiprocessor
+Runs vic using the multiprocessor
 %end
 
 echo "Today is $(date)"

@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+"""
+plotting swe percentiles
+usage: <python> <swe_plot.py> <configuration.cfg>
+
+Reads in a netcdf file converted from VIC fluxes.
+
+
+
+"""
+from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
+import xarray as xr
+import os
+import time
+import math
+import gc
+import argparse
+from netCDF4 import Dataset
+import matplotlib
+matplotlib.use('Agg') 
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from matplotlib.colors import ListedColormap
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import cartopy.io.shapereader as shpreader
+from tonic.io import read_config
+
+
+
+#read in configuration file
+parser = argparse.ArgumentParser(description='Reorder dimensions')
+parser.add_argument('config_file', metavar='config_file', type=argparse.FileType('r'), nargs=1, help='configuration file')
+args = parser.parse_args()
+config_dict = read_config(args.config_file[0].name)
+
+#read in from configuration file
+direc = config_dict['VIC2NC']['OutputDirNC']
+N = config_dict['ECFLOW']['Met_Delay']
+#number of plotting positions
+num_pp = config_dict['PLOT']['num_plot_pos']
+cdf_loc = config_dict['PLOT']['cdf_SWE']
+plot_loc = config_dict['PLOT']['plot_SWE']
+outfile = config_dict['PLOT']['Percent_SWE']
+
+N = int(N)
+num_pp = float(num_pp)
+
+#how many days behind metdata is from realtime
+date_unformat = datetime.now() - timedelta(days=N)
+
+date = date_unformat.strftime('%Y-%m-%d')
+date_ncfile = date_unformat.strftime('%Y%m%d')
+month_day = date_unformat.strftime("%B_%-d")
+
+#read VIC output that has been converted to a netcdf file 
+f = "pnw_daily_run.%s-%s.nc" %(date_ncfile, date_ncfile)
+
+ds = xr.open_dataset(os.path.join(direc,f))
+
+#create list of all latitudes and longitudes for full rectangle
+un_lat = ds['lat'].values
+un_lon = ds['lon'].values
+
+num_lat = len(un_lat)
+num_lon = len(un_lon)
+
+latitude = np.repeat(un_lat,num_lon)
+longitude = np.tile(un_lon, num_lat)
+
+#Weibull Plotting Position
+q = []
+
+for i in range(1,num_pp+1):
+	q.append(i/(num_pp+1))
+#create a min and max plotting position 
+#for any values that fall outside of historic range   
+min_q = min(q)/2
+max_q = max(q)+min_q
+
+#select out time and variable data 
+ds_day = ds.sel(time=date)
+swe_ds = ds_day['SWE']
+
+#create a dictionary containing the lat, lon and corresponding percentile value (if one exists)
+d = []
+
+for i in range(0,len(latitude)):
+    
+	#iterate through all latitudes and longitudes
+	ds_lat = swe_ds.sel(lat=latitude[i])
+	ds_lon = ds_lat.sel(lon=longitude[i])
+    
+	value = ds_lon.values
+
+	lat = latitude[i]
+	lon = longitude[i]
+	#read in sorted list of cdf values  
+	#if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
+	#this is done to make creating the xarray dataset easier later on
+	try: 
+		cdf_file = "%s_$s" %(lat, lon)
+		cdf_path = os.path.join(cdf_loc, month_day, cdf_file 
+		cdf = pd.read_csv(cdf_path, index_col=None, delimiter=None, header=None)
+		x = cdf[0]
+        
+		#10mm threshold based on current monitor
+		if (value < 1):
+			combine = (lat, lon)
+			d.append(combine)
+		else:    
+        
+			try:
+				#interpolation
+				f = interp1d(x,q)
+				percentile = f(value)
+				combine = (lat, lon, float(percentile))
+				d.append(combine)
+				#if interpolation fails then a value is assigned based on 
+				#whether it is higher or lower than the range
+			except ValueError:
+				if (value > max(x)):
+					percentile = (max_q)
+					combine = (lat, lon, percentile)
+					d.append(combine)
+				else:
+					percentile = (min_q)
+					combine = (lat, lon, percentile)
+					d.append(combine)
+	except IOError: 
+		percentile = value
+		combine = (lat, lon)
+		d.append(combine)
+
+#Dictionary to DataFrame to Dataset
+df = pd.DataFrame(d, columns=["Latitude", "Longitude", "Percentile"])
+a = df['Percentile'].values
+new = a.reshape(195, 245)
+
+dsx = xr.Dataset({'percentile': (['lat', 'lon'], new)}, 
+	coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
+
+#save to netcdf
+dsx.to_netcdf(outfile, mode='w', format='NETCDF4')
+
+
+

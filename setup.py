@@ -27,7 +27,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-
 def check_dependencies():
     install_requires = []
 
@@ -65,8 +64,6 @@ def check_dependencies():
     except: 
 	install_requires.append('configobj')
   
-
-
     return install_requires
 
 if __name__ == "__main__":

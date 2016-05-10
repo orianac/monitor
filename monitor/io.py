@@ -4,9 +4,7 @@ import numpy as np
 from tempfile import mkstemp
 from shutil import move, rmtree
 
-######### ----------------------------------------###########
-
-def proc_subprocess(executing_arguments, dir):
+def proc_subprocess(executing_arguments, log_path):
     proc = subprocess.Popen( ' '.join(executing_arguments),
                             shell=True,
                             stderr=subprocess.PIPE,
@@ -17,10 +15,8 @@ def proc_subprocess(executing_arguments, dir):
     stderr = retvals[1]
     returncode = proc.returncode
 
-    with open(dir+'log_file', "a" ) as logfile:
+    with open(os.path.join(log_path, 'log_file.txt') "a") as logfile:
         logfile.write( stderr+stdout )
-
-######### ----------------------------------------###########
 
 def replace(file_path, pattern, subst):
     #Create temp file
@@ -39,5 +35,4 @@ def replace(file_path, pattern, subst):
     #Move new file
     move(abs_path, file_path)
 
-######### ----------------------------------------###########
 

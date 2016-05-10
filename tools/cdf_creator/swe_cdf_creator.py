@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ######swe_cdf_creator.py
-######usage: <python> <swe_cdf> <>
+######usage: <python> <swe_cdf_creator.py> <configuration.cfg>
 
-##### Creates list of ascending list from long-term SWE VIC data.
+##### Creates list of ascending list from long-term SWE VIC produced data.
 ##### Period of time is defined in configuration file. 
 ##### Applies a moving window-esque method to collect 
 ##### 5 days of data at a time and then sorts that data. 
@@ -36,8 +36,6 @@ end_date = config_dict['CDF']['End_Date']
 latlon_list = config_dict['CDF']['LatLon_List']
 output_direc = config_dict['SWE']['Out_Dir']
 
-print(start_date)
-print(end_date)
 #load in netcdf file from which cdfs will be taken
 all_data = xray.open_dataset(os.path.join(direc,file))
 
@@ -49,21 +47,6 @@ coordinates = pd.read_csv(latlon_list, sep=' ', index_col=None, delimiter=None, 
 
 latitude = coordinates[0]
 longitude = coordinates[1]
-
-#parse out start/end years, month, days
-s_year = start_date[0:5]
-s_month = start_date[6:8]
-s_day = start_date[9:11]
-s_date = '%s,%s,%s' %(s_year,s_month,s_day)
-
-print('%s,%s,%s' %(s_year,s_month,s_day))
-
-e_year = end_date[0:5]
-e_month = end_date[6:8]
-e_day = end_date[9:11]
-e_date = '%s,%s,%s' %(e_year,e_month,e_day)
-
-print('%s,%s,%s' %(e_year,e_month,e_day))
 
 #create plotting positions using Wiebull distribution
 
@@ -100,8 +83,8 @@ for i in range(0,len(latitude)):
 
         lat = latitude[i]
         lon = longitude[i]
-	print('%s %s %s' %(month, lat, lon))
-        filename = '%s_%s' %(lat, lon)
+        
+	filename = '%s_%s' %(lat, lon)
 
         #save the 150 values by day and lat/lon
         path2 = ('%s/%s_%s' %(output_direc, month, current_day.day))

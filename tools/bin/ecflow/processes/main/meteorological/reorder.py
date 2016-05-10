@@ -27,18 +27,15 @@ met_loc = config_dict['ECFLOW']['Met_Loc']
 #netcdf file prefixes
 param = ['pr', 'tmmn', 'tmmx', 'vs']
 
-for i in param:
+for var in param:
 	#in file
 	nc_file = '%s/%s.nc' %(met_loc, i)
 	#out file
 	reorder_file = '%s/%s.reorder.nc' %(met_loc, i)
-	try:
-		#remove previous days file, ncpdq doesn't overwrite
+
+	#remove previous days file, ncpdq doesn't overwrite
+	if os.path.isfile(reorder_file):
 		os.remove(reorder_file)
 
-		reorder = ['ncpdq -a day,lat,lon %s %s' %(nc_file, reorder_file)]
-		proc_subprocess(reorder, met_loc)
-	except OSError:
-		print('No file to remove')
-		reorder = ['ncpdq -a day,lat,lon %s %s' %(nc_file, reorder_file)]
-		proc_subprocess(reorder, met_loc)
+	reorder = ['ncpdq -a day,lat,lon %s %s' %(nc_file, reorder_file)]
+	proc_subprocess(reorder, met_loc)

@@ -15,7 +15,7 @@ from monitor.log import set_logger
 # --------------------------------------------------------------------------- #
 def main():
     """
-    Write suite definition file for over-the-loop data processing.
+    Write suite definition file for drought monitor data processing.
     """
 
     logger = set_logger(os.path.splitext(os.path.split(__file__)[-1])[0],
@@ -53,7 +53,7 @@ def main():
                     task = add_dependencies(task, tkey, suite_dict)
 
     logger.info(defs)
-    if suite_dict['MAIN']['MakeDummyScripts'] == True:
+    if suite_dict['MAIN']['MakeDummyScripts']:
         defs.generate_scripts()
 
     if defs.check_job_creation():

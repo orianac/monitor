@@ -2,7 +2,6 @@ import os.path
 from .os_tools import file_chmod
 
 
-# ---------------------------------------------------------------------------#
 def copy_clean_vic_config(src, dst, header=None, **kwargs):
     ''' From Joe Hamman's build_vic_namelistCopy. VIC style ASCII configuration
     file from src to dst. Remove comments and empty lines. Replace keywords
@@ -22,7 +21,6 @@ def copy_clean_vic_config(src, dst, header=None, **kwargs):
     file_chmod(dst)
 
 
-# ---------------------------------------------------------------------------#
 def replace_var_pythonic_config(src, dst, header=None, **kwargs):
     ''' Python style ASCII configuration file from src to dst. Dost not remove
     comments or empty lines. Replace keywords in brackets with variable values

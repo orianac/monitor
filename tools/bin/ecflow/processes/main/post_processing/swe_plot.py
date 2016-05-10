@@ -187,7 +187,7 @@ ax.add_feature(ocean,facecolor='lightblue', zorder = 1)
 
 cmap = matplotlib.colors.ListedColormap(['darkred', 'red', 'tomato', 'lightsalmon', 'mistyrose', 
                                          'yellow', 'lightsteelblue', 'cornflowerblue', 'royalblue', 'blue', 'navy'])
-cmap.set_bad('lightgrey')
+
 img=dsx['percentile'].plot(ax = ax, vmin = 0, vmax = 10, levels=[0, 0.01, 0.05, 0.1, 0.2, 0.35, 0.65, 0.8, 0.9, 0.95, 0.99, 1.0], add_colorbar=False, cmap=cmap, transform = ccrs.PlateCarree(), zorder=2)
 
 

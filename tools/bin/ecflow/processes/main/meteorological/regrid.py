@@ -32,18 +32,15 @@ grid_file = '%s/grid_info' %(met_loc)
 param = ['pr', 'tmmn', 'tmmx', 'vs']
 
 
-for i in param:
+for var in param:
 	#in file
 	reorder_file = '%s/%s.reorder.nc' %(met_loc, i)
 	#out file
 	regrid_file = '%s/%s.regrid.nc' %(met_loc, i)
 	
-        try:
 		#remove previous days file, cdo doesn't overwrite
+        if os.path.isfile(regrid_file):
                 os.remove(regrid_file)
 
-                regrid = ['cdo remapcon,%s %s %s' %(grid_file, reorder_file, regrid_file)]
-                proc_subprocess(regrid, met_loc)
-        except OSError:
-                regrid = ['cdo remapcon,%s %s %s' %(grid_file, reorder_file, regrid_file)]
-                proc_subprocess(regrid, met_loc)
+	regrid = ['cdo remapcon,%s %s %s' %(grid_file, reorder_file, regrid_file)]
+	proc_subprocess(regrid, met_loc)
