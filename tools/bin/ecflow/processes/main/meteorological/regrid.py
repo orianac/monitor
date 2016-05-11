@@ -1,16 +1,19 @@
 #!/usr/bin/env python
-####regrid.py
-####usage: <python> <regrid.py> <configuration.cfg>
+"""
+regrid.py
+usage: <python> <regrid.py> <configuration.cfg>
 
-####This script changes the grid and domain in accordance with 
-####the grid_file.
-####This script uses subprocess to execute cdo remapcon. 
-####Remapcon was selected to ensure that no precipiation was lost
-####in the regridding process. 
-
+This script changes the grid and domain in accordance with 
+the grid_file.
+This script uses subprocess to execute cdo remapcon. 
+Remapcon was selected to ensure that no precipiation was lost
+in the regridding process. 
+"""
 import os
 import sys
 import argparse
+from cdo import Cdo
+cdo = Cdo()
 from tonic.io import read_config
 from monitor.io import proc_subprocess
 
@@ -42,5 +45,4 @@ for var in param:
         if os.path.isfile(regrid_file):
                 os.remove(regrid_file)
 
-	regrid = ['cdo remapcon,%s %s %s' %(grid_file, reorder_file, regrid_file)]
-	proc_subprocess(regrid, met_loc)
+	cdo.remapcon(grid_file, input=reorder_file, output=regrid_file)

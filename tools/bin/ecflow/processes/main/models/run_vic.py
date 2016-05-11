@@ -18,7 +18,6 @@ from shutil import move, rmtree
 
 from tonic.io import read_config
 from tonic.models.vic import VIC
-from monitor.io import replace
 from monitor.log import set_logger
 from monitor.share import LOG_LEVEL, _pickle_method
 from monitor import model_tools
@@ -100,19 +99,13 @@ def main():
 			lon=str(longitude[i])	
 			global_file_cell = os.path.join(
 				run_dir, 'control_{0}_{1}'.format(lat, lon))
-	    		model_tools.copy_clean_vic_config(global_file_template, global_file_cell, header=None)
-			#using the configuration file, replace the "missing" data in each global parameter file
-			replace(global_file_cell, 'SOILROOT', soil_root)
-			replace(global_file_cell, 'LATITUDE', lat)
-			replace(global_file_cell, 'LONGITUDE', lon)
-			replace(global_file_cell, 'OUTPUT_DIR', output_dir)
-			replace(global_file_cell, 'FORCING_DIR', forcing_dir)
-			replace(global_file_cell, 'START_YEAR', model_start_year)
-			replace(global_file_cell, 'START_MONTH', model_start_month)
-			replace(global_file_cell, 'START_DAY', model_start_day)
-			replace(global_file_cell, 'END_YEAR', model_end_year)
-			replace(global_file_cell, 'END_MONTH', model_end_month)
-			replace(global_file_cell, 'END_DAY', model_end_day)
+			kwargs = {'SOILROOT': soil_root, 'LATITUDE': lat, 'LONGITUDE': lon, 
+				'OUTPUT_DIR': output_dir, 'FORCING_DIR': forcing_dir, 
+				'START_YEAR': model_start_year, 'START_MONTH': model_start_month, 
+				'START_DAY': model_start_day, 'END_YEAR': model_end_year, 
+				'END_MONTH': model_end_month, 'END_DAY': model_end_day}
+	    		model_tools.copy_clean_vic_config(global_file_template, 
+						global_file_cell, header=None, **kwargs)
 			#creates a list of the pathways for each global parameter file to be referenced by vic.run
 			global_file_list.append(global_file_cell)
 			log_dir_list.append(log_dir)

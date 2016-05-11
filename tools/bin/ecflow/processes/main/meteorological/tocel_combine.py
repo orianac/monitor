@@ -28,11 +28,8 @@ tmin_cel = tmin_kel - KELVIN
 tmax_cel = tmax_kel - KELVIN
 
 #read in precip and wind
-precip = np.genfromtxt('%sDATA_LAT_LON' %(precip_dir))
-wind = np.genfromtxt('%sDATA_LAT_LON' %(wind_dir))
-
-precip = float(precip)
-wind = float(wind)
+precip = np.genfromtxt('%sDATA_LAT_LON' %(precip_dir), dtype='float')
+wind = np.genfromtxt('%sDATA_LAT_LON' %(wind_dir), dtype='float')
 
 #create dictionary in the order that VIC reads in forcings parameters
 d = {'precipitation': format(precip, '.5f'), 'tmax': format(tmax_cel, '.5f'), 'tmin': format(tmin_cel, '.5f'), 'wind': format(wind, '.5f')}

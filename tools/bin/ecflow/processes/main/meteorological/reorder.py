@@ -1,19 +1,19 @@
 #!/usr/bin/env python
-#####reorder.py
-#####usage: <python> <reorder.py> <configuration.cfg>
+"""
+reorder.py
+usage: <python> <reorder.py> <configuration.cfg>
 
-#####In order for tonic (netcdf2vic.py) to read and convert these netcdf files
-#####their dimensions must be day,lat,lon.
-#####This script uses subprocess to execute the ncpdq command.
-
+In order for tonic (netcdf2vic.py) to read and convert these netcdf files
+their dimensions must be day,lat,lon.
+This script uses subprocess to execute the ncpdq command.
+"""
 import os
 import sys
+from nco import Nco
+nco = Nco()
 import argparse
 from tonic.io import read_config
 from monitor.io import proc_subprocess
-
-######### ----------------------------------------###########
-
 
 #read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
@@ -37,5 +37,5 @@ for var in param:
 	if os.path.isfile(reorder_file):
 		os.remove(reorder_file)
 
-	reorder = ['ncpdq -a day,lat,lon %s %s' %(nc_file, reorder_file)]
-	proc_subprocess(reorder, met_loc)
+	nco.ncpdq(input=nc_file, output=reorder_file, options='-a',
+       			dimension='day,lat,lon')

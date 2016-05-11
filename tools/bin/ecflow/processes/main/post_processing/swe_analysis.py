@@ -4,9 +4,11 @@ plotting swe percentiles
 usage: <python> <swe_plot.py> <configuration.cfg>
 
 Reads in a netcdf file converted from VIC fluxes.
-
-
-
+Extract one day's data based on date in config file.
+Read in saved cdfs.
+Interpolate the every value's  percentile 
+based on where it falls relative to historic range. 
+Save as new netcdf file to be read by plotting script.
 """
 from datetime import datetime, timedelta
 import numpy as np
@@ -29,11 +31,10 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import cartopy.io.shapereader as shpreader
 from tonic.io import read_config
 
-
-
 #read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
-parser.add_argument('config_file', metavar='config_file', type=argparse.FileType('r'), nargs=1, help='configuration file')
+parser.add_argument('config_file', metavar='config_file', 
+	type=argparse.FileType('r'), nargs=1, help='configuration file')
 args = parser.parse_args()
 config_dict = read_config(args.config_file[0].name)
 
@@ -76,6 +77,7 @@ q = []
 
 for i in range(1,num_pp+1):
 	q.append(i/(num_pp+1))
+
 #create a min and max plotting position 
 #for any values that fall outside of historic range   
 min_q = min(q)/2
@@ -98,6 +100,7 @@ for i in range(0,len(latitude)):
 
 	lat = latitude[i]
 	lon = longitude[i]
+
 	#read in sorted list of cdf values  
 	#if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
 	#this is done to make creating the xarray dataset easier later on
@@ -107,20 +110,23 @@ for i in range(0,len(latitude)):
 		cdf = pd.read_csv(cdf_path, index_col=None, delimiter=None, header=None)
 		x = cdf[0]
         
-		#10mm threshold based on current monitor
+		#10mm threshold (this is based on current monitor)
+		
 		if (value < 1):
 			combine = (lat, lon)
 			d.append(combine)
 		else:    
-        
+        	
 			try:
-				#interpolation
+				#interpolate percentile based on where value falls 
+				#relative to historic range
 				f = interp1d(x,q)
 				percentile = f(value)
 				combine = (lat, lon, float(percentile))
 				d.append(combine)
-				#if interpolation fails then a value is assigned based on 
-				#whether it is higher or lower than the range
+			
+			#if interpolation fails then a value is assigned based on 
+			#whether it is higher or lower than the range
 			except ValueError:
 				if (value > max(x)):
 					percentile = (max_q)

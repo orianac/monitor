@@ -14,10 +14,10 @@ import multiprocessing as mp
 from shutil import copyfile
 
 from tonic.io import read_config
-from monitor.io import replace, proc_subprocess
+from monitor.io import proc_subprocess
 from monitor.log import set_logger
 from monitor.share import LOG_LEVEL 
-
+from monitor import model_tools
 ######### ----------------------------------------###########
 
 
@@ -63,12 +63,12 @@ def main():
 		lat_lons = os.path.join(
                 	run_dir, 'control_{0}'.format(ll))
 		copyfile(script, lat_lons)
-		replace(lat_lons, 'DATA_LAT_LON', ll)
-		replace(lat_lons, 'TMIN_DIREC', tmin_dir)
-		replace(lat_lons, 'TMAX_DIREC', tmax_dir)
-		replace(lat_lons, 'PRECIP_DIREC', precip_dir)
-		replace(lat_lons, 'WIND_DIREC', wind_dir)
-		replace(lat_lons, 'FINAL_DIREC', final_dir)
+		kwargs = {'DATA_LAT_LON': ll, 'TMIN_DIREC': tmin_dir, 
+			'TMAX_DIREC': tmax_dir, 'PRECIP_DIREC': precip_dir, 
+			'WIND_DIREC': wind_dir, 'FINAL_DIREC': final_dir}
+		model_tools.copy_clean_vic_config(script,
+                                                lat_lons, header=None, **kwargs)
+
 		log_dir_list.append(log_dir)
 
 	#run each tocel_combine script using subprocess
