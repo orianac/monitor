@@ -37,9 +37,9 @@ param = ['pr', 'tmmn', 'tmmx', 'vs']
 
 for var in param:
 	#in file
-	reorder_file = '%s/%s.reorder.nc' %(met_loc, i)
+	reorder_file = '%s/%s.reorder.nc' %(met_loc, var)
 	#out file
-	regrid_file = '%s/%s.regrid.nc' %(met_loc, i)
+	regrid_file = '%s/%s.regrid.nc' %(met_loc, var)
 	
 		#remove previous days file, cdo doesn't overwrite
         if os.path.isfile(regrid_file):

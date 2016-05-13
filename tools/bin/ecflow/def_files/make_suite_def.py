@@ -12,7 +12,6 @@ import ecflow
 from tonic.io import read_config
 from monitor.log import set_logger
 
-# --------------------------------------------------------------------------- #
 def main():
     """
     Write suite definition file for drought monitor data processing.
@@ -70,44 +69,41 @@ def main():
                                                 suite_dict['MAIN']['DefFile']))
     defs.save_as_defs(suite_dict['MAIN']['DefFile'])
     return
-# -------------------------------------------------------------------- #
-suite = suite_dict[key]
-def add_dependencies(node, suite):
-    # add optional meters and events
-    if 'NEvents' in suite:
-        for e in range(suite['NEvents']):
-            node.add_event(suite['Event{}'.format(e)])
-    if 'NMeters' in suite:
-        for mt in range(suite['NMeters']):
-            node.add_event(suite['Meter{}'.format(mt)])
-    # add optional time-related dependencies
-    if 'RepeatDay' in suite:
-        node.add_repeat(ecflow.RepeatDay(suite['RepeatDay']))
-    if 'NTimes' in suite:
-        for n in range(suite['NTimes']):
-            node.add_time(suite['Time{}'.format(n)])
-    if 'NDates' in suite:
-        for a in range(suite['NDates']):
-            day = suite['DateDay{}'.format(a)]
-            month = suite['DateMonth{}'.format(a)]
-            year = suite['DateYear{}'.format(a)]
-            node.add_date(day, month, year)
-    if 'NDays' in suite:
-        for b in range(suite['NDays']):
-            node.add_day(suite['Day{}'.format(b)])
-    # add optional trigger and complete dependencies
-    if 'Trigger' in suite:
-        node.add_trigger(suite['Trigger'])
-    if 'Complete' in suite:
-        node.add_complete(suite['Complete'])
-    # add optional task-level variables
-    if 'NVariables' in suite:
-        for v in range(suite['NVariables']):
-            node.add_variable(suite['VariableName{}'.format(v)],
-                              suite['VariableValue{}'.format(v)])
-    return node
 
-# -------------------------------------------------------------------- #
+def add_dependencies(node, key, suite_dict):
+    # add optional meters and events
+    if 'NEvents' in suite_dict[key]:
+        for e in range(suite_dict[key]['NEvents']):
+            node.add_event(suite_dict[key]['Event{}'.format(e)])
+    if 'NMeters' in suite_dict[key]:
+        for mt in range(suite_dict[key]['NMeters']):
+            node.add_event(suite_dict[key]['Meter{}'.format(mt)])
+    # add optional time-related dependencies
+    if 'RepeatDay' in suite_dict[key]:
+        node.add_repeat(ecflow.RepeatDay(suite_dict[key]['RepeatDay']))
+    if 'NTimes' in suite_dict[key]:
+        for n in range(suite_dict[key]['NTimes']):
+            node.add_time(suite_dict[key]['Time{}'.format(n)])
+    if 'NDates' in suite_dict[key]:
+        for a in range(suite_dict[key]['NDates']):
+            day = suite_dict[key]['DateDay{}'.format(a)]
+            month = suite_dict[key]['DateMonth{}'.format(a)]
+            year = suite_dict[key]['DateYear{}'.format(a)]
+            node.add_date(day, month, year)
+    if 'NDays' in suite_dict[key]:
+        for b in range(suite_dict[key]['NDays']):
+            node.add_day(suite_dict[key]['Day{}'.format(b)])
+    # add optional trigger and complete dependencies
+    if 'Trigger' in suite_dict[key]:
+        node.add_trigger(suite_dict[key]['Trigger'])
+    if 'Complete' in suite_dict[key]:
+        node.add_complete(suite_dict[key]['Complete'])
+    # add optional task-level variables
+    if 'NVariables' in suite_dict[key]:
+        for v in range(suite_dict[key]['NVariables']):
+            node.add_variable(suite_dict[key]['VariableName{}'.format(v)],
+                              suite_dict[key]['VariableValue{}'.format(v)])
+    return node
+                        
 if __name__ == "__main__":
     main()
-# -------------------------------------------------------------------- #

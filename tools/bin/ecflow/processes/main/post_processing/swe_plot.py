@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
+swe_plot.py
+usage: <python> <swe_plot.py> <configuration.cfg>
 
+Plots the results of swe_analysis.py
 """
 import matplotlib
 matplotlib.use('Agg')
@@ -22,7 +25,7 @@ config_dict = read_config(args.config_file[0].name)
 
 #read in from configuration file
 percent_file = config_dict['PLOT']['Percent_SWE']
-
+plot_loc = config_dict['PLOT']['plot_SWE']
 
 #plotting
 plt.figure(figsize=(8,8))

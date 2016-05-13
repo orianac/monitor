@@ -14,8 +14,8 @@ def proc_subprocess(executing_arguments, log_path):
     stdout = retvals[0]
     stderr = retvals[1]
     returncode = proc.returncode
-
-    with open(os.path.join(log_path, 'log_file.txt') "a") as logfile:
+    
+    with open(os.path.join(log_path, 'log_file.txt'), "a") as logfile:
         logfile.write( stderr+stdout )
 
 

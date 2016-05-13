@@ -20,15 +20,6 @@ import math
 import gc
 import argparse
 from netCDF4 import Dataset
-import matplotlib
-matplotlib.use('Agg') 
-import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-from matplotlib.colors import ListedColormap
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-import cartopy.io.shapereader as shpreader
 from tonic.io import read_config
 
 #read in configuration file
@@ -44,7 +35,6 @@ N = config_dict['ECFLOW']['Met_Delay']
 #number of plotting positions
 num_pp = config_dict['PLOT']['num_plot_pos']
 cdf_loc = config_dict['PLOT']['cdf_SWE']
-plot_loc = config_dict['PLOT']['plot_SWE']
 outfile = config_dict['PLOT']['Percent_SWE']
 
 N = int(N)

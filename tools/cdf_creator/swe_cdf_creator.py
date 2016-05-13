@@ -38,7 +38,7 @@ end_date = config_dict['CDF']['End_Date']
 latlon_list = config_dict['CDF']['LatLon_List']
 output_direc = config_dict['SWE']['Out_Dir']
 
-num_pp = float(num_pp)
+num_pp = int(num_pp)
 
 #load in netcdf file from which cdfs will be taken
 ds = xray.open_dataset(os.path.join(direc,f))
@@ -58,14 +58,13 @@ longitude = coordinates[1]
 q = []
 
 for i in range(1,num_pp+1):
-    q.append(i/(num_pp+1))
+    q.append(i/(num_pp+1.0))
 
 #cdfs for SWE
 for i in range(0,len(latitude)):
     ds_latslice = ds_timeslice.sel(lat=latitude[i])
-   
     #group by month and day
-    s = ds_latslice.sel(lon=latitude[i]).to_series()
+    s = ds_latslice['SWE'].sel(lon=longitude[i]).to_series()
     #remove February 29th data
     ss = s[(s.index.month!=2) | (s.index.day!=29)]
     gb = ss.groupby([ss.index.month, ss.index.day])
@@ -106,7 +105,7 @@ for i in range(0,len(latitude)):
 for i in range(0,len(latitude)):
     lat_data = data_year.sel(lat=latitude[i])
 
-    s = ds_latslice.sel(lon=latitude[i]).to_series()
+    s = ds_latslice.sel(lon=longitude[i]).to_series()
     ss = s[(s.index.month!=2) | (s.index.day!=29)]
     gb = ss.groupby([ss.index.month, ss.index.day])
 

@@ -10,6 +10,6 @@ Outputs are saved in %MET_LOC% as defined in config file
 
 echo "Today is $(date)"
 
-python %ECF_HOME%/processes/main/meteorological/combine.py %CFG_FILE%
+python %ECF_HOME%/processes/main/meteorological/combine.py working_%CFG_FILE%
 
 %include <tail.h>

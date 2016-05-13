@@ -9,8 +9,6 @@ Outputs are saved in %MET_LOC% as defined in config file
 %end
 
 echo "Today is $(date)"
-cp %ECF_HOME%/python.cfg %CFG_FILE%
-
 rm %MET_LOC%/pr.nc %MET_LOC%/tmmn.nc %MET_LOC%/tmmx.nc %MET_LOC%/vs.nc||echo "Nothing to remove"
 
 python %ECF_HOME%/processes/main/meteorological/get_metdata.py %CFG_FILE%

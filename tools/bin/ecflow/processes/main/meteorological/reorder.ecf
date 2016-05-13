@@ -8,7 +8,7 @@ Outputs are saved in %MET_LOC% as defined in config file
 
 echo "Today is $(date)"
 
-python %ECF_HOME%/processes/main/meteorological/reorder.py %CFG_FILE%
+python %ECF_HOME%/processes/main/meteorological/reorder.py working_%CFG_FILE%
 
 
 %include <tail.h>

@@ -22,7 +22,7 @@ from monitor.log import set_logger
 from monitor.share import LOG_LEVEL, _pickle_method
 from monitor import model_tools
 from monitor import os_tools
-from monitor import compat
+from monitor.compat import copy_reg
 
 # -------------------------------------------------------------------------#
 
@@ -94,9 +94,9 @@ def main():
 		longitude = ll_csv[1]
 
 		#loop through each lat/lon to create new global parameter file for each grid cell
-		for lon, lat in zip(longitude, latitude):
-			lat=str(latitude[i])
-			lon=str(longitude[i])	
+		for lons, lats in zip(longitude, latitude):
+			lat=str(lats)
+			lon=str(lons)	
 			global_file_cell = os.path.join(
 				run_dir, 'control_{0}_{1}'.format(lat, lon))
 			kwargs = {'SOILROOT': soil_root, 'LATITUDE': lat, 'LONGITUDE': lon, 
@@ -119,7 +119,7 @@ def main():
 			for r in retvals:
 				# return value should be 0 if VIC exited normally
 				if r.get() != 0:
-				logger.critical(r.get())
+					logger.critical(r.get())
 		except (mp.ProcessError, mp.TimeoutError, mp.BufferTooShort,
 			mp.AuthenticationError) as e:
 			logger.info(e)
