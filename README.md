@@ -6,18 +6,18 @@ designed to be run through the work flow package ecFlow.
 ## Overview:
 Monitor has four main components.
 
-**Meterological**  `/monitor/tools/bin/ecflow/processes/main/meteorological/`
+**Meteorological**  `/monitor/tools/bin/ecflow/processes/main/meteorological/`
 	Contains scripts for the manipulation of meteorological data, 
 including to download, regrid, and file format conversion.
-Uses `TONIC` to convert netcdf to ascii.
+Uses `tonic` to convert netcdf to ascii.
 
 **Models**  `/monitor/tools/bin/ecflow/processes/main/models/`
-	Contains scripts to conduct model runs. Initially implementation
+	Contains scripts to conduct model runs. Initial implementation
 uses the model `VIC`.
 
 **Post-Processing**  `/monitor/tools/bin/ecflow/processes/main/post_processing/`
 	Contains scripts to post-process model output, including file
-format conversation, analysis, and plotting. Uses `TONIC` to convert ascii to
+format conversation, analysis, and plotting. Uses `tonic` to convert ascii to
 netcdf 
 
 **CDF Creator**  `/monitor/tools/cdf_creator/`
