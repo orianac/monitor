@@ -1,0 +1,21 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Change VIC ouput (ascii) to one netcdf file
+NOTE:
+Running vic2netcdf for one day requires one change to the script
+Within def get_dates(file): (approximately line 911)
+There is a variable called datelist.
+If running for only one day: datelist = [datetime(*data)]
+If running for multiple days: datelist = [datetime(*d) for d in data] (original line of code from git hub)
+%end
+
+echo "Today is $(date)"
+
+python %ECF_HOME%/processes/main/post_processing/change_cfg.py %WORKING_CFG_FILE% 
+
+%ENVIRON%/vic_utils vic2netcdf %TONIC_CFG%/VIC2nc.cfg
+
+%include <tail.h>
+

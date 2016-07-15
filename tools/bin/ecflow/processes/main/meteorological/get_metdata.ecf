@@ -1,0 +1,17 @@
+%include <qsub.h>
+%include <head.h>
+%manual
+Copies a new configuration file inorder to replace the start 
+and end date.
+Remove previous days netcdf files, to make way for new ones.
+Run get_metdata.py. 
+Outputs are saved in %MET_LOC% as defined in config file
+%end
+
+echo "Today is $(date)"
+rm %MET_LOC%/pr.nc %MET_LOC%/tmmn.nc %MET_LOC%/tmmx.nc %MET_LOC%/vs.nc||echo "Nothing to remove"
+
+python %ECF_HOME%/processes/main/meteorological/get_metdata.py %CFG_FILE%
+
+
+%include <tail.h>

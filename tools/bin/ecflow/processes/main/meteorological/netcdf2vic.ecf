@@ -1,0 +1,17 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Change netcdf files to ascii files that can be read by VIC using Tonic
+%end
+
+echo "Today is $(date)"
+
+cd %TONIC%
+
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/pr2vic.cfg
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/tmmn2vic.cfg
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/tmmx2vic.cfg
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/vs2vic.cfg
+
+%include <tail.h>

@@ -1,0 +1,14 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Runs reorder.py.
+Outputs are saved in %MET_LOC% as defined in config file
+%end
+
+echo "Today is $(date)"
+
+python %ECF_HOME%/processes/main/meteorological/reorder.py %WORKING_CFG_FILE%
+
+
+%include <tail.h>

@@ -1,0 +1,22 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Creates the percentile plots for soil liquid, swe, and soil liquid + swe. 
+%end
+
+echo "Today is $(date)"
+
+python %ECF_HOME%/processes/main/post_processing/swe_analysis.py %WORKING_CFG_FILE%
+
+python %ECF_HOME%/processes/main/post_processing/soil_moist_analysis.py %WORKING_CFG_FILE%
+python %ECF_HOME%/processes/main/post_processing/total_moist_analysis.py %WORKING_CFG_FILE%
+
+python %ECF_HOME%/processes/main/post_processing/swe_plot.py %WORKING_CFG_FILE%
+
+python %ECF_HOME%/processes/main/post_processing/soil_moist_plot.py %WORKING_CFG_FILE%
+python %ECF_HOME%/processes/main/post_processing/total_moist_plot.py %WORKING_CFG_FILE%
+
+%include <tail.h>
+
+
