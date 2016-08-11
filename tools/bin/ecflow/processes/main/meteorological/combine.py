@@ -89,7 +89,7 @@ def main():
      		pool.apply_async(proc_subprocess, args=(run_tocel_combine, run_dir))
 	
     #remove the tocel_combine scripts from run_dir		
-    map(os.remove, lat_lons_list)
+    #map(os.remove, lat_lons_list)
 
     #end multiprocessor
     if cores > 1:

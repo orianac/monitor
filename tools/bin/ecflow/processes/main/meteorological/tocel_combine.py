@@ -10,6 +10,7 @@ and combines precip, tmax, tmin, and wind into 1 file for each grid cell.
 """
 import pandas as pd
 import numpy as np
+import os
 from monitor.share import KELVIN
 
 # these paths will be filled in by combine.py
@@ -33,10 +34,14 @@ precip = np.genfromtxt(os.path.join(
 wind = np.genfromtxt(os.path.join(wind_dir, '{DATA_LAT_LON}'), dtype='float')
 
 # create a dataframe in the order that VIC reads in forcings parameters
-df = pd.DataFrame(data=[("%.5f" % precip, "%.5f" % tmax_cel,
-                         "%.5f" % tmin_cel, "%.5f" % wind)],
-                  columns=['precipitation', 'tmax', 'tmin', 'wind'],
-                  index=['parameters'])
+#df = pd.DataFrame(data=[(np.round(precip, 5), np.round(tmax_cel, 5), 
+#			 np.round(tmin_cel, 5), np.round(wind, 5))],
+#			 columns=['precipitation', 'tmax', 'tmin', 'wind'],
+#                 	 index=['parameters'])
 # save
-df.to_csv(os.path.join(final_dir, '{DATA_LAT_LON}'),
-          sep='\t', header=False, index=False)
+#df.to_csv(os.path.join(final_dir, '{DATA_LAT_LON}'),
+#          sep='\t', header=False, index=False)
+
+# save as .txt file
+output = np.column_stack((precip,tmax_cel,tmin_cel,wind))
+np.savetxt(os.path.join(final_dir, '{DATA_LAT_LON}'),output,delimiter='  ', fmt="%.5f")

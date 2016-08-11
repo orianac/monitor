@@ -9,7 +9,7 @@ Outputs are saved in %MET_LOC% as defined in config file
 %end
 
 echo "Today is $(date)"
-rm %MET_LOC%/pr.nc %MET_LOC%/tmmn.nc %MET_LOC%/tmmx.nc %MET_LOC%/vs.nc||echo "Nothing to remove"
+rm %MET_LOC%/pr_total.nc %MET_LOC%/tmmn_total.nc %MET_LOC%/tmmx_total.nc %MET_LOC%/vs_total.nc %MET_LOC%/sph_total.nc %MET_LOC%/srad_total.nc||echo "Nothing to remove"
 
 python %ECF_HOME%/processes/main/meteorological/get_metdata.py %CFG_FILE%
 

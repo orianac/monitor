@@ -30,7 +30,7 @@ param = ['pr', 'tmmn', 'tmmx', 'vs']
 
 for var in param:
     # in file
-    nc_file = os.path.join(met_loc, '%s.nc' % (var))
+    nc_file = os.path.join(met_loc, '%s_total.nc' % (var))
     # out file
     reorder_file = os.path.join(met_loc, '%s.reorder.nc' % (var))
 
