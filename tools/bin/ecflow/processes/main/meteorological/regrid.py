@@ -32,7 +32,7 @@ met_loc = config_dict['ECFLOW']['Met_Loc']
 grid_file = os.path.join(met_loc, 'grid_info')
 
 # netcdf file prefixes
-param = ['pr', 'tmmn', 'tmmx', 'vs']
+param = ['pr', 'tmmn', 'tmmx', 'vs', 'srad', 'sph']
 
 
 for var in param:

@@ -26,7 +26,7 @@ config_dict = read_config(args.config_file[0].name)
 met_loc = config_dict['ECFLOW']['Met_Loc']
 
 # netcdf file prefixes
-param = ['pr', 'tmmn', 'tmmx', 'vs']
+param = ['pr', 'tmmn', 'tmmx', 'vs', 'srad', 'sph']
 
 for var in param:
     # in file

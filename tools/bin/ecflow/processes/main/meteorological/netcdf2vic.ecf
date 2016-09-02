@@ -13,5 +13,8 @@ cd %TONIC%
 %ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/tmmn2vic.cfg
 %ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/tmmx2vic.cfg
 %ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/vs2vic.cfg
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/srad2vic.cfg
+%ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/sph2vic.cfg
+
 
 %include <tail.h>

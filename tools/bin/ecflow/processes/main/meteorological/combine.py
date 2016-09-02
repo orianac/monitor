@@ -41,6 +41,8 @@ def main():
     tmax_dir = config_dict['COMBINE']['Tmax_dir']
     precip_dir = config_dict['COMBINE']['Precip_dir']
     wind_dir = config_dict['COMBINE']['Wind_dir']
+    srad_dir = config_dict['COMBINE']['Srad_dir']
+    sph_dir = config_dict['COMBINE']['Sph_dir']
     final_dir = config_dict['COMBINE']['Final_Met_dir']
 	
     #set up multiprocessor
@@ -89,7 +91,7 @@ def main():
      		pool.apply_async(proc_subprocess, args=(run_tocel_combine, run_dir))
 	
     #remove the tocel_combine scripts from run_dir		
-    #map(os.remove, lat_lons_list)
+    map(os.remove, lat_lons_list)
 
     #end multiprocessor
     if cores > 1:

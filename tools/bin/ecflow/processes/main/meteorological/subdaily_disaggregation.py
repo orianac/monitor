@@ -54,7 +54,7 @@ def main():
     run_dir = config_dict['VIC']['RunDir']
     start_date = config_dict['SUBDAILY']['Subd_Met_Start_Date']
     end_date = config_dict['SUBDAILY']['Subd_Met_End_Date']
-    executable = config_dict['VIC']['Executable']
+    executable = config_dict['SUBDAILY']['Executable']
 
     # set up vic to be run
     vic = VIC(executable)

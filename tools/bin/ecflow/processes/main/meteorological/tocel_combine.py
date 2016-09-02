@@ -18,9 +18,11 @@ tmin_dir = '{TMIN_DIREC}'
 tmax_dir = '{TMAX_DIREC}'
 precip_dir = '{PRECIP_DIREC}'
 wind_dir = '{WIND_DIREC}'
+srad_dir = '{SRAD_DIREC}'
+sph_dir = '{SPH_DIREC}'
 final_dir = '{FINAL_DIREC}'
 
-#read in tmin and tmax
+# read in tmin and tmax
 # temperature data is in Kelvin, switch to Celcius
 tmin_kel = np.genfromtxt(os.path.join(tmin_dir, '{DATA_LAT_LON}'))
 tmax_kel = np.genfromtxt(os.path.join(tmax_dir, '{DATA_LAT_LON}'))
@@ -28,20 +30,13 @@ tmax_kel = np.genfromtxt(os.path.join(tmax_dir, '{DATA_LAT_LON}'))
 tmin_cel = tmin_kel - KELVIN
 tmax_cel = tmax_kel - KELVIN
 
-#read in precip and wind
+# read in precip, wind, shortwave radiation and specific humidity 
 precip = np.genfromtxt(os.path.join(
     precip_dir, '{DATA_LAT_LON}'), dtype='float')
 wind = np.genfromtxt(os.path.join(wind_dir, '{DATA_LAT_LON}'), dtype='float')
-
-# create a dataframe in the order that VIC reads in forcings parameters
-#df = pd.DataFrame(data=[(np.round(precip, 5), np.round(tmax_cel, 5), 
-#			 np.round(tmin_cel, 5), np.round(wind, 5))],
-#			 columns=['precipitation', 'tmax', 'tmin', 'wind'],
-#                 	 index=['parameters'])
-# save
-#df.to_csv(os.path.join(final_dir, '{DATA_LAT_LON}'),
-#          sep='\t', header=False, index=False)
+srad = np.genfromtxt(os.path.join(srad_dir, '{DATA_LAT_LON}'), dtype='float') 
+sph = np.genfromtxt(os.path.join(sph_dir, '{DATA_LAT_LON}'), dtype='float')
 
 # save as .txt file
-output = np.column_stack((precip,tmax_cel,tmin_cel,wind))
+output = np.column_stack((precip,tmax_cel,tmin_cel,wind,srad,sph))
 np.savetxt(os.path.join(final_dir, '{DATA_LAT_LON}'),output,delimiter='  ', fmt="%.5f")
