@@ -16,5 +16,4 @@ cd %TONIC%
 %ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/srad2vic.cfg
 %ENVIRON%/vic_utils netcdf2vic %TONIC_CFG%/sph2vic.cfg
 
-
 %include <tail.h>

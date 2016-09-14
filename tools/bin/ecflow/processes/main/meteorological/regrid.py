@@ -9,7 +9,6 @@ Remapcon was selected to ensure that no precipitation was lost
 in the regridding process. 
 """
 import os
-#import sys
 import argparse
 from cdo import Cdo
 cdo = Cdo()
