@@ -3,12 +3,11 @@
 %include <head.h>
 %manual
 Runs regrid.py
-Outputs are saved in %MET_LOC% as defined in config file
+Outputs are saved in Met_Loc as defined in config file
 %end
 echo "Today is $(date)"
 
 python %ECF_HOME%/processes/main/meteorological/regrid.py %WORKING_CFG_FILE%
-
 
 %include <tail.h>
 

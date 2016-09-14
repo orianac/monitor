@@ -3,9 +3,9 @@
 %include <head.h>
 %manual
 Changes kelvin to celsius
-Combine the individual ascii files for precip, tmax, tmin, and wind 
-for each grid cell
-Outputs are saved in %MET_LOC% as defined in config file
+Combine the individual ascii files for precip, tmax, tmin, wind, 
+specific humidity and SW radiation for each grid cell.
+Outputs are saved in Final_Met_dir as defined in config file
 %end
 
 echo "Today is $(date)"

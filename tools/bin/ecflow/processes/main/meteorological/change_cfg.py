@@ -14,22 +14,25 @@ from tonic.io import read_config
 from monitor import model_tools
 
 # parse arguments
-parser = argparse.ArgumentParser(description='Run VIC')
+parser = argparse.ArgumentParser(description='Change cfg file')
 parser.add_argument('config_file', metavar='config_file',
                     type=argparse.FileType('r'), nargs=1,
                     help='configuration file')
 args = parser.parse_args()
 config_dict = read_config(args.config_file[0].name)
 
-input_dir = config_dict['VIC']['OutputDirRoot']
-output_dir = config_dict['VIC2NC']['OutputDirNC']
-startdate = config_dict['DATE']['Start_Date']
-enddate = config_dict['DATE']['End_Date']
-domain_file = config_dict['VIC2NC']['DomainFile']
-config_file = config_dict['VIC2NC']['ConfigFile']
-temp_config_file = config_dict['VIC2NC']['TempConfigFile']
+input_dir = config_dict['SUBDAILY']['Final_Subd_Dir']
+output_dir = config_dict['SUBDAILY2NC']['OutputDirNC']
+output_prefix = config_dict['SUBDAILY2NC']['OutputPrefix']
+startdate = config_dict['SUBDAILY']['Subd_Met_Start_Date']
+enddate = config_dict['SUBDAILY']['Subd_Met_End_Date']
+domain_file = config_dict['SUBDAILY2NC']['DomainFile']
+config_file = config_dict['SUBDAILY2NC']['ConfigFile']
+temp_config_file = config_dict['SUBDAILY2NC']['TempConfigFile']
 
-kwargs = {'INPUT_DIR': input_dir, 'OUTPUT_DIR': output_dir,
+
+
+kwargs = {'INPUT_DIR': input_dir, 'OUTPUT_DIR': output_dir, 'OUTPUT_PREFIX': output_prefix,
           'MODEL_START_DATE': startdate, 'MODEL_END_DATE': enddate,
           'DOMAIN_FILE': domain_file}
 

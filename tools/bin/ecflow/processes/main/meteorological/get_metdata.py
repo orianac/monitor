@@ -10,6 +10,7 @@ they are added back in.
 import xarray as xr
 import os
 import argparse
+import calendar
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from tonic.io import read_config
@@ -17,14 +18,15 @@ from monitor import model_tools
 ######### ----------------------------------------###########
 
 # read in configuration file
-parser = argparse.ArgumentParser(description='Reorder dimensions')
+parser = argparse.ArgumentParser(description='Download met data')
 parser.add_argument('config_file', metavar='config_file', type=argparse.FileType('r'),
                     nargs=1, help='configuration file')
 args = parser.parse_args()
 config_dict = read_config(args.config_file[0].name)
 
 # read in meterological data location
-met_loc = config_dict['ECFLOW']['Met_Loc']
+full_year_met_loc = config_dict['SUBDAILY']['Full_Year_Met_Data']
+daily_met_loc = config_dict['SUBDAILY']['Daily_Met_Data']
 old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
 N = int(config_dict['ECFLOW']['Met_Delay'])
@@ -32,18 +34,22 @@ N = int(config_dict['ECFLOW']['Met_Delay'])
 # get date and number of days
 date = datetime.now() - timedelta(days=N)
 num_day = date.timetuple().tm_yday - 1  # python 0 start correction
-num_startofyear = 0
-num_endofyear = 364
-year = date.strftime('%Y')
-lastyear = date.timetuple().tm_year - 1
 date_format = date.strftime('%Y-%m-%d')
-lastyear_date = datetime.now() - timedelta(days=365)
-lastyear_date_format = lastyear_date.strftime('%Y-%m-%d')
+year = date.strftime('%Y')
 
-# replace start date and end date in the configuration file
-kwargs = {'MODEL_START_DATE': date_format, 'MODEL_END_DATE': date_format, 'SUBD_MET_START_DATE': lastyear_date_format}
-model_tools.replace_var_pythonic_config(
-    old_config_file, new_config_file, header=None, **kwargs)
+lastyear_date = datetime.now() - timedelta(days=365 + N)
+lastyear_num_day = lastyear_date.timetuple().tm_yday - 1
+lastyear_date_format = lastyear_date.strftime('%Y-%m-%d')
+lastyear = lastyear_date.strftime('%Y')
+
+# define the end date used in the subdaily generation
+subd_met_end_date = (date + timedelta(days=1)).strftime('%Y-%m-%d')
+
+num_startofyear = 0
+if calendar.isleap(int(lastyear)):
+    num_endofyear = 365
+else:
+    num_endofyear = 364
 
 # set a variable name for the number of lats and lons
 num_lat = 584
@@ -67,7 +73,6 @@ globe_attrs['note2'] = ("Citation: Abatzoglou, J.T., 2013, Development of gridde
 globe_attrs['last_permanent_slice'] = "50"
 globe_attrs['note3'] = ("Data in slices after last_permanent_slice (1-based) are " +
                         "considered provisional and subject to change with subsequent updates")
-
 # latitude attributes
 lat_attrs = OrderedDict()
 lat_attrs['units'] = "degrees_north"
@@ -151,160 +156,276 @@ sph_attrs['coordinates'] = "lon lat"
 sph_attrs['height'] = "2 m"
 sph_attrs['missing_value'] = -32767.
 
-# download metdata from http://thredds.northwestknowledge.net
-# precipitation
-pr_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                   "/thredds/dodsC/MET/pr/pr_%s.nc?lon[0:1:%s]," % (year, num_lon) +
-                   "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
-                   "precipitation_amount[%s:1:%s]" % (num_startofyear, num_day) +
-                   "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-pr_thisyear_ds = xr.open_dataset(pr_url_thisyear)
+# if the full year met folder is empty, we must download the full year
+if not os.listdir(full_year_met_loc):
 
-pr_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                   "/thredds/dodsC/MET/pr/pr_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
-                   "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_endofyear) +
-                   "precipitation_amount[%s:1:%s]" % (num_day, num_endofyear) +
-                   "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-pr_lastyear_ds = xr.open_dataset(pr_url_lastyear)
+    # replace start date, end date and met location in the configuration file
+    kwargs = {'MODEL_DATE': date_format, 'SUBD_MET_START_DATE': lastyear_date_format,
+              'SUBD_MET_END_DATE': subd_met_end_date, 'MET_LOC': full_year_met_loc,
+              'FULL_YEAR': 'Year'}
+    model_tools.replace_var_pythonic_config(
+        old_config_file, new_config_file, header=None, **kwargs)
 
-# concatenate the two files
-pr_total_ds = xr.concat([pr_lastyear_ds, pr_thisyear_ds], 'day')
+    met_loc = full_year_met_loc
 
-# add attributes (these are include the same descriptions as can be found from URL
-# this information does not get downloaded but is necessary for CDO
-# commands and tonic
-pr_total_ds.precipitation_amount.attrs = pr_attrs
-pr_total_ds.lat.attrs = lat_attrs
-pr_total_ds.lon.attrs = lon_attrs
-pr_total_ds.day.attrs = day_attrs
-pr_total_ds.attrs = globe_attrs
-# save netcdf
-pr_total_ds.to_netcdf(os.path.join(met_loc, 'pr_total.nc'),
-                mode='w', format='NETCDF4')
+    # download metdata from http://thredds.northwestknowledge.net
+    # precipitation
+    pr_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                       "/thredds/dodsC/MET/pr/pr_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                       "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                       "precipitation_amount[%s:1:%s]" % (num_startofyear, num_day) +
+                       "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    pr_thisyear_ds = xr.open_dataset(pr_url_thisyear)
 
-# minimum temperature
-tmmn_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/tmmn/tmmn_%s.nc?lon[0:1:%s]," % (year, num_lon) +
-                     "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
-                     "air_temperature[%s:1:%s]" % (num_startofyear, num_day) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-tmmn_thisyear_ds = xr.open_dataset(tmmn_url_thisyear)
+    pr_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                       "/thredds/dodsC/MET/pr/pr_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                       "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                       "precipitation_amount[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                       "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    pr_lastyear_ds = xr.open_dataset(pr_url_lastyear)
 
-tmmn_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/tmmn/tmmn_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
-                     "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_endofyear) +
-                     "air_temperature[%s:1:%s]" % (num_day, num_endofyear) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-tmmn_lastyear_ds = xr.open_dataset(tmmn_url_lastyear)
+    # concatenate the two files
+    pr_total_ds = xr.concat([pr_lastyear_ds, pr_thisyear_ds], 'day')
 
-tmmn_total_ds = xr.concat([tmmn_lastyear_ds, tmmn_thisyear_ds], 'day')
+    # add attributes (these are include the same descriptions as can be found from URL
+    # this information does not get downloaded but is necessary for CDO
+    # commands and tonic
+    pr_total_ds.precipitation_amount.attrs = pr_attrs
+    pr_total_ds.lat.attrs = lat_attrs
+    pr_total_ds.lon.attrs = lon_attrs
+    pr_total_ds.day.attrs = day_attrs
+    pr_total_ds.attrs = globe_attrs
+    # save netcdf
+    pr_total_ds.to_netcdf(os.path.join(met_loc, 'pr.nc'),
+                          mode='w', format='NETCDF4')
 
-tmmn_total_ds.air_temperature.attrs = tmmn_attrs
-tmmn_total_ds.lat.attrs = lat_attrs
-tmmn_total_ds.lon.attrs = lon_attrs
-tmmn_total_ds.day.attrs = day_attrs
-tmmn_total_ds.attrs = globe_attrs
+    # minimum temperature
+    tmmn_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/tmmn/tmmn_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                         "air_temperature[%s:1:%s]" % (num_startofyear, num_day) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmn_thisyear_ds = xr.open_dataset(tmmn_url_thisyear)
 
-tmmn_total_ds.to_netcdf(os.path.join(met_loc, 'tmmn_total.nc'),
+    tmmn_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/tmmn/tmmn_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                         "air_temperature[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmn_lastyear_ds = xr.open_dataset(tmmn_url_lastyear)
+
+    tmmn_total_ds = xr.concat([tmmn_lastyear_ds, tmmn_thisyear_ds], 'day')
+
+    tmmn_total_ds.air_temperature.attrs = tmmn_attrs
+    tmmn_total_ds.lat.attrs = lat_attrs
+    tmmn_total_ds.lon.attrs = lon_attrs
+    tmmn_total_ds.day.attrs = day_attrs
+    tmmn_total_ds.attrs = globe_attrs
+
+    tmmn_total_ds.to_netcdf(os.path.join(met_loc, 'tmmn.nc'),
+                            mode='w', format='NETCDF4')
+
+    # maximum temperature
+    tmmx_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/tmmx/tmmx_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                         "air_temperature[%s:1:%s]" % (num_startofyear, num_day) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmx_thisyear_ds = xr.open_dataset(tmmx_url_thisyear)
+
+    tmmx_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/tmmx/tmmx_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                         "air_temperature[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmx_lastyear_ds = xr.open_dataset(tmmx_url_lastyear)
+
+    tmmx_total_ds = xr.concat([tmmx_lastyear_ds, tmmx_thisyear_ds], 'day')
+
+    tmmx_total_ds.air_temperature.attrs = tmmx_attrs
+    tmmx_total_ds.lat.attrs = lat_attrs
+    tmmx_total_ds.lon.attrs = lon_attrs
+    tmmx_total_ds.day.attrs = day_attrs
+    tmmx_total_ds.attrs = globe_attrs
+    tmmx_total_ds.to_netcdf(os.path.join(met_loc, 'tmmx.nc'),
+                            mode='w', format='NETCDF4')
+
+    # wind speed
+    vs_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                       "/thredds/dodsC/MET/vs/vs_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                       "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                       "wind_speed[%s:1:%s]" % (num_startofyear, num_day) +
+                       "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    vs_thisyear_ds = xr.open_dataset(vs_url_thisyear)
+
+    vs_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                       "/thredds/dodsC/MET/vs/vs_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                       "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                       "wind_speed[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                       "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    vs_lastyear_ds = xr.open_dataset(vs_url_lastyear)
+
+    vs_total_ds = xr.concat([vs_lastyear_ds, vs_thisyear_ds], 'day')
+
+    vs_total_ds.wind_speed.attrs = vs_attrs
+    vs_total_ds.lat.attrs = lat_attrs
+    vs_total_ds.lon.attrs = lon_attrs
+    vs_total_ds.day.attrs = day_attrs
+    vs_total_ds.attrs = globe_attrs
+    vs_total_ds.to_netcdf(os.path.join(met_loc, 'vs.nc'),
+                          mode='w', format='NETCDF4')
+
+    # shortwave radiation
+    srad_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/srad/srad_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                         "surface_downwelling_shortwave_flux_in_air[%s:1:%s]" % (num_startofyear, num_day) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    srad_thisyear_ds = xr.open_dataset(srad_url_thisyear)
+
+    srad_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                         "/thredds/dodsC/MET/srad/srad_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                         "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                         "surface_downwelling_shortwave_flux_in_air[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                         "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    srad_lastyear_ds = xr.open_dataset(srad_url_lastyear)
+
+    srad_total_ds = xr.concat([srad_lastyear_ds, srad_thisyear_ds], 'day')
+
+    srad_total_ds.surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
+    srad_total_ds.lat.attrs = lat_attrs
+    srad_total_ds.lon.attrs = lon_attrs
+    srad_total_ds.day.attrs = day_attrs
+    srad_total_ds.attrs = globe_attrs
+    srad_total_ds.to_netcdf(os.path.join(met_loc, 'srad.nc'),
+                            mode='w', format='NETCDF4')
+
+    # specific humidity
+    sph_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                        "/thredds/dodsC/MET/sph/sph_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                        "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                        "specific_humidity[%s:1:%s]" % (num_startofyear, num_day) +
+                        "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    sph_thisyear_ds = xr.open_dataset(sph_url_thisyear)
+
+    sph_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                        "/thredds/dodsC/MET/sph/sph_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
+                        "lat[0:1:%s],day[%s:1:%s]," % (num_lat, lastyear_num_day, num_endofyear) +
+                        "specific_humidity[%s:1:%s]" % (lastyear_num_day, num_endofyear) +
+                        "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    sph_lastyear_ds = xr.open_dataset(sph_url_lastyear)
+
+    sph_total_ds = xr.concat([sph_lastyear_ds, sph_thisyear_ds], 'day')
+
+    sph_total_ds.specific_humidity.attrs = sph_attrs
+    sph_total_ds.lat.attrs = lat_attrs
+    sph_total_ds.lon.attrs = lon_attrs
+    sph_total_ds.day.attrs = day_attrs
+    sph_total_ds.attrs = globe_attrs
+    sph_total_ds.to_netcdf(os.path.join(met_loc, 'sph.nc'),
                            mode='w', format='NETCDF4')
 
-# maximum temperature
-tmmx_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/tmmx/tmmx_%s.nc?lon[0:1:%s]," % (year, num_lon) +
-                     "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
-                     "air_temperature[%s:1:%s]" % (num_startofyear, num_day) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-tmmx_thisyear_ds = xr.open_dataset(tmmx_url_thisyear)
+else:  # if met data for the past year has been downloaded, we only have to download one day at a time.
 
-tmmx_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/tmmx/tmmx_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
-                     "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_endofyear) +
-                     "air_temperature[%s:1:%s]" % (num_day, num_endofyear) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-tmmx_lastyear_ds = xr.open_dataset(tmmx_url_lastyear)
+    # replace start date, end date and met location in the configuration file
+    kwargs = {'MODEL_DATE': date_format, 'SUBD_MET_START_DATE': lastyear_date_format,
+              'SUBD_MET_END_DATE': subd_met_end_date, 'MET_LOC': daily_met_loc,
+              'FULL_YEAR': 'Day'}
+    model_tools.replace_var_pythonic_config(
+        old_config_file, new_config_file, header=None, **kwargs)
 
-tmmx_total_ds = xr.concat([tmmx_lastyear_ds, tmmx_thisyear_ds], 'day')
+    met_loc = daily_met_loc
 
-tmmx_total_ds.air_temperature.attrs = tmmx_attrs
-tmmx_total_ds.lat.attrs = lat_attrs
-tmmx_total_ds.lon.attrs = lon_attrs
-tmmx_total_ds.day.attrs = day_attrs
-tmmx_total_ds.attrs = globe_attrs
-tmmx_total_ds.to_netcdf(os.path.join(met_loc, 'tmmx_total.nc'),
-                           mode='w', format='NETCDF4')
+    # download metdata from http://thredds.northwestknowledge.net
+    # precipitation
+    pr_url = ("http://thredds.northwestknowledge.net:8080" +
+              "/thredds/dodsC/MET/pr/pr_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+              "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+              "precipitation_amount[%s:1:%s]" % (num_day, num_day) +
+              "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    pr_ds = xr.open_dataset(pr_url)
+    # add attributes (these are include the same descriptions as can be found from URL
+    # this information does not get downloaded but is necessary for CDO
+    # commands and tonic
+    pr_ds.precipitation_amount.attrs = pr_attrs
+    pr_ds.lat.attrs = lat_attrs
+    pr_ds.lon.attrs = lon_attrs
+    pr_ds.day.attrs = day_attrs
+    pr_ds.attrs = globe_attrs
+    # save netcdf
+    pr_ds.to_netcdf(os.path.join(met_loc, 'pr.nc'),
+                    mode='w', format='NETCDF4')
 
-# wind speed
-vs_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                   "/thredds/dodsC/MET/vs/vs_%s.nc?lon[0:1:%s]," % (year, num_lon) +
-                   "lat[0:1:584],day[%s:1:%s]," % (num_startofyear, num_day) +
-                   "wind_speed[%s:1:%s]" % (num_startofyear, num_day) +
-                   "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-vs_thisyear_ds = xr.open_dataset(vs_url_thisyear)
+    # minimum temperature
+    tmmn_url = ("http://thredds.northwestknowledge.net:8080" +
+                "/thredds/dodsC/MET/tmmn/tmmn_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+                "air_temperature[%s:1:%s]" % (num_day, num_day) +
+                "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmn_ds = xr.open_dataset(tmmn_url)
+    tmmn_ds.air_temperature.attrs = tmmn_attrs
+    tmmn_ds.lat.attrs = lat_attrs
+    tmmn_ds.lon.attrs = lon_attrs
+    tmmn_ds.day.attrs = day_attrs
+    tmmn_ds.attrs = globe_attrs
+    tmmn_ds.to_netcdf(os.path.join(met_loc, 'tmmn.nc'),
+                      mode='w', format='NETCDF4')
 
-vs_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                   "/thredds/dodsC/MET/vs/vs_%s.nc?lon[0:1:%s]," % (lastyear, num_lon) +
-                   "lat[0:1:584],day[%s:1:%s]," % (num_day, num_endofyear) +
-                   "wind_speed[%s:1:%s]" % (num_day, num_endofyear) +
-                   "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-vs_lastyear_ds = xr.open_dataset(vs_url_lastyear)
+    # maximum temperature
+    tmmx_url = ("http://thredds.northwestknowledge.net:8080" +
+                "/thredds/dodsC/MET/tmmx/tmmx_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+                "air_temperature[%s:1:%s]" % (num_day, num_day) +
+                "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    tmmx_ds = xr.open_dataset(tmmx_url)
+    tmmx_ds.air_temperature.attrs = tmmx_attrs
+    tmmx_ds.lat.attrs = lat_attrs
+    tmmx_ds.lon.attrs = lon_attrs
+    tmmx_ds.day.attrs = day_attrs
+    tmmx_ds.attrs = globe_attrs
+    tmmx_ds.to_netcdf(os.path.join(met_loc, 'tmmx.nc'),
+                      mode='w', format='NETCDF4')
 
-vs_total_ds = xr.concat([vs_lastyear_ds, vs_thisyear_ds], 'day')
+    # wind speed
+    vs_url = ("http://thredds.northwestknowledge.net:8080" +
+              "/thredds/dodsC/MET/vs/vs_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+              "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+              "wind_speed[%s:1:%s]" % (num_day, num_day) +
+              "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    vs_ds = xr.open_dataset(vs_url)
+    vs_ds.wind_speed.attrs = vs_attrs
+    vs_ds.lat.attrs = lat_attrs
+    vs_ds.lon.attrs = lon_attrs
+    vs_ds.day.attrs = day_attrs
+    vs_ds.attrs = globe_attrs
+    vs_ds.to_netcdf(os.path.join(met_loc, 'vs.nc'),
+                    mode='w', format='NETCDF4')
+  # shortwave radiation
+    srad_url = ("http://thredds.northwestknowledge.net:8080" +
+                "/thredds/dodsC/MET/srad/srad_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+                "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+                "surface_downwelling_shortwave_flux_in_air[%s:1:%s]" % (num_day, num_day) +
+                "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    srad_ds = xr.open_dataset(srad_url)
+    srad_ds.surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
+    srad_ds.lat.attrs = lat_attrs
+    srad_ds.lon.attrs = lon_attrs
+    srad_ds.day.attrs = day_attrs
+    srad_ds.attrs = globe_attrs
+    srad_ds.to_netcdf(os.path.join(met_loc, 'srad.nc'),
+                      mode='w', format='NETCDF4')
 
-vs_total_ds.wind_speed.attrs = vs_attrs
-vs_total_ds.lat.attrs = lat_attrs
-vs_total_ds.lon.attrs = lon_attrs
-vs_total_ds.day.attrs = day_attrs
-vs_total_ds.attrs = globe_attrs
-vs_total_ds.to_netcdf(os.path.join(met_loc, 'vs_total.nc'), 
-		mode='w', format='NETCDF4')
-
-# shortwave radiation
-srad_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/srad/srad_%s.nc?lon[0:1:%s]," %(year, num_lon) +
-                     "lat[0:1:584],day[%s:1:%s]," %(num_startofyear, num_day) +
-                     "surface_downwelling_shortwave_flux_in_air[%s:1:%s]" %(num_startofyear, num_day) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-srad_thisyear_ds = xr.open_dataset(srad_url_thisyear)
-
-srad_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                     "/thredds/dodsC/MET/srad/srad_%s.nc?lon[0:1:%s]," %(year, num_lon) +
-                     "lat[0:1:584],day[%s:1:%s]," %(num_startofyear, num_day) +
-                     "surface_downwelling_shortwave_flux_in_air[%s:1:%s]" %(num_startofyear, num_day) +
-                     "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-srad_lastyear_ds = xr.open_dataset(srad_url_lastyear)
-
-srad_total_ds = xr.concat([srad_lastyear_ds, srad_thisyear_ds], 'day')
-
-srad_total_ds.surface_downwelling_shortwave_flux_in_air.attrs = srad_attrs
-srad_total_ds.lat.attrs = lat_attrs
-srad_total_ds.lon.attrs = lon_attrs
-srad_total_ds.day.attrs = day_attrs
-srad_total_ds.attrs = globe_attrs
-srad_total_ds.to_netcdf(os.path.join(met_loc, 'srad_total.nc'),
-        	           mode='w', format='NETCDF4')
-
-#specific humidity
-sph_url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
-                    "/thredds/dodsC/MET/sph/sph_%s.nc?lon[0:1:%s]," %(year, num_lon) +
-                    "lat[0:1:584],day[%s:1:%s]," %(num_startofyear, num_day) +
-                    "specific_humidity[%s:1:%s]" %(num_startofyear, num_day) +
-                    "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-sph_thisyear_ds = xr.open_dataset(sph_url_thisyear)
-
-sph_url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
-                    "/thredds/dodsC/MET/sph/sph_%s.nc?lon[0:1:%s]," %(lastyear, num_lon) +
-                    "lat[0:1:584],day[%s:1:%s]," %(num_day, num_endofyear) +
-                    "specific_humidity[%s:1:%s]" %(num_day, num_endofyear) +
-                    "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
-sph_lastyear_ds = xr.open_dataset(sph_url_lastyear)
-
-sph_total_ds = xr.concat([sph_lastyear_ds, sph_thisyear_ds], 'day')
-
-sph_total_ds.specific_humidity.attrs = sph_attrs
-sph_total_ds.lat.attrs = lat_attrs
-sph_total_ds.lon.attrs = lon_attrs
-sph_total_ds.day.attrs = day_attrs
-sph_total_ds.attrs = globe_attrs
-sph_total_ds.to_netcdf(os.path.join(met_loc, 'sph_total.nc'),
-		          mode='w', format='NETCDF4')
-
+    # specific humidity
+    sph_url = ("http://thredds.northwestknowledge.net:8080" +
+               "/thredds/dodsC/MET/sph/sph_%s.nc?lon[0:1:%s]," % (year, num_lon) +
+               "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
+               "specific_humidity[%s:1:%s]" % (num_day, num_day) +
+               "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    sph_ds = xr.open_dataset(sph_url)
+    sph_ds.specific_humidity.attrs = sph_attrs
+    sph_ds.lat.attrs = lat_attrs
+    sph_ds.lon.attrs = lon_attrs
+    sph_ds.day.attrs = day_attrs
+    sph_ds.attrs = globe_attrs
+    sph_ds.to_netcdf(os.path.join(met_loc, 'sph.nc'),
+                     mode='w', format='NETCDF4')

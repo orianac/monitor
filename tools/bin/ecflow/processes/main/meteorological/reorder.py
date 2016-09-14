@@ -8,7 +8,6 @@ their dimensions must be day,lat,lon.
 This script uses subprocess to execute the ncpdq command.
 """
 import os
-import sys
 from nco import Nco
 nco = Nco()
 import argparse
@@ -30,7 +29,7 @@ param = ['pr', 'tmmn', 'tmmx', 'vs', 'srad', 'sph']
 
 for var in param:
     # in file
-    nc_file = os.path.join(met_loc, '%s_total.nc' % (var))
+    nc_file = os.path.join(met_loc, '%s.nc' % (var))
     # out file
     reorder_file = os.path.join(met_loc, '%s.reorder.nc' % (var))
 
