@@ -5,7 +5,6 @@ usage: <python> <create_global_file.py> <configuration.cfg>
 
 This script creates a global file from the template with the correct
  model start and end dates.
-It also slices the subdaily met data to the correct date.
 """
 import argparse
 from tonic.io import read_config
