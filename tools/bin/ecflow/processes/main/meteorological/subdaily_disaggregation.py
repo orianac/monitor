@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-This script uses multiprocessing to run VIC
-usage: python run_vic.py configuation.cfg
+This script uses multiprocessing to run VIC 4.2
+to generate subdaily forcings.
+usage: python generate_subd_forcings.py configuration.cfg
 """
 
 
@@ -32,10 +33,9 @@ def main():
     # parse arguments
     parser = argparse.ArgumentParser(description='Run VIC')
     parser.add_argument('config_file', metavar='config_file',
-                        type=argparse.FileType('r'), nargs=1,
                         help='configuration file')
     args = parser.parse_args()
-    config_dict = read_config(args.config_file[0].name)
+    config_dict = read_config(args.config_file)
     # set up logger
     logger = set_logger(os.path.splitext(os.path.split(__file__)[-1])[0],
                         LOG_LEVEL)
@@ -43,17 +43,17 @@ def main():
     copy_reg.pickle(types.MethodType, _pickle_method)
     # read variables from config file
     cores = config_dict['ECFLOW']['Cores']
-    global_file_template = config_dict['VIC']['GlobalFileTemplate']
-    forcing_dir = config_dict['VIC']['ForcingDirRoot']
-    output_dir = config_dict['VIC']['OutputDirRoot']
-    log_dir_root = config_dict['VIC']['LogDirRoot']
-    soil_root = config_dict['VIC']['SoilRoot']
-    soil_list = config_dict['VIC']['SoilList']
-    num_ens = config_dict['ECFLOW']['NEns']
-    run_dir = config_dict['VIC']['RunDir']
-    start_date = config_dict['DATE']['Start_Date']
-    end_date = config_dict['DATE']['End_Date']
-    executable = config_dict['VIC']['Executable']
+    global_file_template = config_dict['SUBDAILY']['GlobalFileTemplate']
+    forcing_dir = config_dict['SUBDAILY']['ForcingDirRoot']
+    output_dir = config_dict['SUBDAILY']['Final_Subd_Dir']
+    log_dir_root = config_dict['SUBDAILY']['LogDirRoot']
+    soil_root = config_dict['SUBDAILY']['SoilRoot']
+    soil_list = config_dict['SUBDAILY']['SoilList']
+    num_ens = config_dict['SUBDAILY']['NEns']
+    run_dir = config_dict['SUBDAILY']['RunDir']
+    start_date = config_dict['SUBDAILY']['Subd_Met_Start_Date']
+    end_date = config_dict['SUBDAILY']['Subd_Met_End_Date']
+    executable = config_dict['SUBDAILY']['Executable']
 
     # set up vic to be run
     vic = VIC(executable)

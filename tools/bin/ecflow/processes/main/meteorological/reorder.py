@@ -8,7 +8,6 @@ their dimensions must be day,lat,lon.
 This script uses subprocess to execute the ncpdq command.
 """
 import os
-import sys
 from nco import Nco
 nco = Nco()
 import argparse
@@ -17,16 +16,16 @@ from monitor.io import proc_subprocess
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
-parser.add_argument('config_file', metavar='config_file', type=argparse.FileType(
-    'r'), nargs=1, help='configuration file')
+parser.add_argument('config_file', metavar='config_file',
+                    help='configuration file')
 args = parser.parse_args()
-config_dict = read_config(args.config_file[0].name)
+config_dict = read_config(args.config_file)
 
 # read in meterological data location
 met_loc = config_dict['ECFLOW']['Met_Loc']
 
 # netcdf file prefixes
-param = ['pr', 'tmmn', 'tmmx', 'vs']
+param = ['pr', 'tmmn', 'tmmx', 'vs', 'srad', 'sph']
 
 for var in param:
     # in file
