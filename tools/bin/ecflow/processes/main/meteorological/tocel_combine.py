@@ -46,13 +46,13 @@ if full_year == 'Year':
     np.savetxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), combined, delimiter='  ', fmt="%.5f")
 
-else:  # if we only downloaded yesterday's data we need to append it to the existing file
-    # read in the existing file
-    existing_file = np.genfromtxt(os.path.join(
+else:  # if we only downloaded yesterday's data we need to append it to the existing data
+    # read in the existing data
+    existing_data = np.genfromtxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), dtype='float')
     # delete the first day's met data
-    existing_file = np.delete(existing_file, 0, 0)
+    existing_data = np.delete(existing_data, 0, 0)
     # append yesterday's met data
-    output = np.vstack([existing_file, combined])
+    output = np.vstack([existing_data, combined])
     np.savetxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), output, delimiter='  ', fmt="%.5f")

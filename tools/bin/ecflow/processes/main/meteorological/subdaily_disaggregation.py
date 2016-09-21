@@ -33,10 +33,9 @@ def main():
     # parse arguments
     parser = argparse.ArgumentParser(description='Run VIC')
     parser.add_argument('config_file', metavar='config_file',
-                        type=argparse.FileType('r'), nargs=1,
                         help='configuration file')
     args = parser.parse_args()
-    config_dict = read_config(args.config_file[0].name)
+    config_dict = read_config(args.config_file)
     # set up logger
     logger = set_logger(os.path.splitext(os.path.split(__file__)[-1])[0],
                         LOG_LEVEL)

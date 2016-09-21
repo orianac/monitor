@@ -15,17 +15,17 @@ from monitor import model_tools
 # read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
 parser.add_argument('config_file', metavar='config_file',
-                    type=argparse.FileType('r'), nargs=1,
                     help='configuration file')
 args = parser.parse_args()
-config_dict = read_config(args.config_file[0].name)
+config_dict = read_config(args.config_file)
 
 # read in the desired variables from the config file
 global_template = config_dict['VIC']['GlobalFileTemplate']
 global_file_path = config_dict['VIC']['GlobalFilePath']
 model_date = config_dict['VIC']['ModelDate']
 
-# parse out year, month, and day from the model date
+# parse out year, month, and day from the model date, which has
+# the form YYYY-MM-DD
 model_year = model_date[:4]
 model_month = model_date[5:7]
 model_day = model_date[8:10]

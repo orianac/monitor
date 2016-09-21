@@ -19,10 +19,9 @@ from tonic.io import read_config
 # read in configuration file
 parser = argparse.ArgumentParser(description='Regrid met data')
 parser.add_argument('config_file', metavar='config_file',
-                    type=argparse.FileType('r'), nargs=1,
                     help='configuration file')
 args = parser.parse_args()
-config_dict = read_config(args.config_file[0].name)
+config_dict = read_config(args.config_file)
 
 # read in met location from config file
 met_loc = config_dict['ECFLOW']['Met_Loc']
