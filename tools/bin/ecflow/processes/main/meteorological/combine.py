@@ -44,6 +44,7 @@ def main():
     srad_dir = config_dict['COMBINE']['Srad_dir']
     sph_dir = config_dict['COMBINE']['Sph_dir']
     final_dir = config_dict['COMBINE']['Final_Met_dir']
+    daily_dir = config_dict['SUBDAILY']['Daily_Met_Data']
     full_year = config_dict['ECFLOW']['FullYear']
 
     # set up multiprocessor
@@ -65,7 +66,7 @@ def main():
         copyfile(script, lat_lons)
         kwargs = {'DATA_LAT_LON': ll, 'TMIN_DIREC': tmin_dir,
                   'TMAX_DIREC': tmax_dir, 'PRECIP_DIREC': precip_dir,
-                  'WIND_DIREC': wind_dir, 'SRAD_DIREC': srad_dir, 'SPH_DIREC': sph_dir, 'FINAL_DIREC': final_dir, 'FULL_YEAR': full_year}
+                  'WIND_DIREC': wind_dir, 'SRAD_DIREC': srad_dir, 'SPH_DIREC': sph_dir, 'FINAL_DIREC': final_dir, 'DAILY_DIREC': daily_dir, 'FULL_YEAR': full_year}
         model_tools.replace_var_pythonic_config(script,
                                                 lat_lons, header=None, **kwargs)
 
@@ -94,7 +95,7 @@ def main():
                 run_tocel_combine, run_dir))
 
     # remove the tocel_combine scripts from run_dir
-    #map(os.remove, lat_lons_list)
+    map(os.remove, lat_lons_list)
 
     # end multiprocessor
     if cores > 1:
