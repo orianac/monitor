@@ -10,7 +10,7 @@ import argparse
 from tonic.io import read_config
 from monitor import model_tools
 import os
-
+from dateutil.parser import parse
 ######### ----------------------------------------###########
 
 # read in configuration file
@@ -31,25 +31,18 @@ vic_save_state = config_dict['VIC']['vic_save_state']
 
 # parse out year, month, and day from the model dates, which have
 # the form YYYY-MM-DD
-start_year = vic_start_date[:4]
-start_month = vic_start_date[5:7]
-start_day = vic_start_date[8:10]
-
-end_year = vic_end_date[:4]
-end_month = vic_end_date[5:7]
-end_day = vic_end_date[8:10]
-
-state_year = vic_save_state[:4]
-state_month = vic_save_state[5:7]
-state_day = vic_save_state[8:10]
+start = parse(vic_start_date)
+end = parse(vic_end_date)
+save_state = parse(vic_save_state)
 
 in_state = os.path.join(state_path, 'state.%s%s%s_00000.nc' %
-                        (start_year, start_month, start_day))
+                        (start.year, start.month, start.day))
 
-# replace the model year, month and day in the global file
-kwargs = {'Start_Year': start_year, 'Start_Month': start_month, 'Start_Day': start_day,
-          'End_Year': end_year, 'End_Month': end_month, 'End_Day': end_day,
-          'State_Year': state_year, 'State_Month': state_month, 'State_Day': state_day,
+kwargs = {'Start_Year': start.year, 'Start_Month': start.month, 'Start_Day': start.day,
+          'End_Year': end.year, 'End_Month': end.month, 'End_Day': end.day,
+          'State_Year': save_state.year, 'State_Month': save_state.month, 'State_Day': save_state.day,
           'In_State': in_state, 'State_Path': state_path}
+
+
 model_tools.replace_var_pythonic_config(
     global_template, global_file_path, header=None, **kwargs)
