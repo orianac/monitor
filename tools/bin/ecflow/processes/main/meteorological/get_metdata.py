@@ -47,13 +47,13 @@ vic_save_state = datetime.now() - timedelta(days=n_days + 59)
 vic_save_state_format = vic_save_state.strftime('%Y-%m-%d')
 
 vic_save_state_year = vic_save_state.strftime('%Y')
-vic_save_state_num = vic_save_state.timetuple().tm_yday - \
-    1  # python 0 start correction
+# python 0 start correction
+vic_save_state_num = vic_save_state.timetuple().tm_yday - 1
 
 # get lastyear's date that we use for subdaily met generation
 lastyear_date = datetime.now() - timedelta(days=365 + n_days)
-lastyear_num_day = lastyear_date.timetuple().tm_yday - \
-    1  # python 0 start correction
+# python 0 start correction
+lastyear_num_day = lastyear_date.timetuple().tm_yday - 1
 lastyear_date_format = lastyear_date.strftime('%Y-%m-%d')
 lastyear = lastyear_date.strftime('%Y')
 
@@ -71,6 +71,7 @@ num_lat = 584
 num_lon = 1385
 
 # define variable names used when filling threads URL
+# an abbreviation and a full name is needed
 varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
             ('tmmx', 'air_temperature'), ('vs', 'wind_speed'),
             ('srad', 'surface_downwelling_shortwave_flux_in_air'), ('sph', 'specific_humidity')]
@@ -214,7 +215,7 @@ if not os.listdir(full_year_met_loc):
         ds.day.attrs = day_attrs
         ds.attrs = globe_attrs
 
-        # place data in dict
+        # place data in dict, the variable abbreviation is used as key
         met_dsets[var[0]] = ds
 
 
@@ -247,7 +248,7 @@ else:  # if met data for the past year has been downloaded, we only have to down
             ds.day.attrs = day_attrs
             ds.attrs = globe_attrs
 
-            # place data in dict
+            # place data in dict, the variable abbreviation is used as key
             met_dsets[var[0]] = ds
 
     else:
@@ -276,7 +277,7 @@ else:  # if met data for the past year has been downloaded, we only have to down
             ds.day.attrs = day_attrs
             ds.attrs = globe_attrs
 
-            # place data in dict
+            # place data in dict, the variable abbreviation is used as key
             met_dsets[var[0]] = ds
 
 # add variable specific attributes and save as netcdf

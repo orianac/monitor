@@ -63,9 +63,7 @@ latitude = np.repeat(un_lat, num_lon)
 longitude = np.tile(un_lon, num_lat)
 
 # Weibull Plotting Position
-q = np.zeros(num_pp)
-for i in range(1, num_pp + 1):
-    q[i - 1] = (i / (num_pp + 1.0))
+q = np.arange(1,num_pp+1)/(num_pp + 1.0)
 
 # create a min and max plotting position
 # for any values that fall outside of historic range
