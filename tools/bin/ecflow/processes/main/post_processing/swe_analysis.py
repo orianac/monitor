@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-plotting swe percentiles
+creating snow water equivalent (swe) percentiles
 usage: <python> <swe_plot.py> <configuration.cfg>
 
 Reads in a netcdf file converted from VIC fluxes.
@@ -27,7 +27,7 @@ from collections import OrderedDict
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate SWE percentiles')
 parser.add_argument('config_file', metavar='config_file',
-                    help='configuration file')
+                    help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -62,8 +62,9 @@ num_lon = len(un_lon)
 latitude = np.repeat(un_lat, num_lon)
 longitude = np.tile(un_lon, num_lat)
 
-# Weibull Plotting Position
-q = np.arange(1,num_pp+1)/(num_pp + 1.0)
+# Weibull Plotting Position (Weibull, W. 1951)
+# we multiply by 100 to get values in the range of 0-100
+q = 100 * (np.arange(1, num_pp + 1) / (num_pp + 1.0))
 
 # create a min and max plotting position
 # for any values that fall outside of historic range
@@ -130,7 +131,7 @@ for lat, lon in zip(latitude, longitude):
 # Dictionary to DataFrame to Dataset
 df = pd.DataFrame(d, columns=["Latitude", "Longitude", "swepercentile"])
 a = df['swepercentile'].values
-new = a.reshape(195, 245)
+new = a.reshape(num_lat, num_lon)
 
 dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new)},
                  coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
@@ -139,8 +140,6 @@ dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999
 dsx.swepercentile.attrs = dsx_attrs
 
-dsxx = dsx * 100
-
 # save to netcdf
-dsxx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_swepercentile_%s.nc' %
-                            (date)), mode='w', format='NETCDF4')
+dsx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_swepercentile_%s.nc' %
+                           (date)), mode='w', format='NETCDF4')

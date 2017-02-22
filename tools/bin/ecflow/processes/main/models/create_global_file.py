@@ -35,6 +35,7 @@ start = parse(vic_start_date)
 end = parse(vic_end_date)
 save_state = parse(vic_save_state)
 
+# generate the path to the initial state file
 in_state = os.path.join(state_path, 'state.%s%s%s_00000.nc' %
                         (start.year, start.month, start.day))
 
