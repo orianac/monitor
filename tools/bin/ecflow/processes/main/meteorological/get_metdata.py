@@ -24,26 +24,41 @@ parser.add_argument('config_file', metavar='config_file',
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
-# read in meterological data location
+# read in meteorological data location
 full_year_met_loc = config_dict['SUBDAILY']['Full_Year_Met_Data']
-daily_met_loc = config_dict['SUBDAILY']['Daily_Met_Data']
+prelim_met_loc = config_dict['SUBDAILY']['Preliminary_Met_Data']
 old_config_file = config_dict['ECFLOW']['old_Config']
 new_config_file = config_dict['ECFLOW']['new_Config']
 n_days = int(config_dict['ECFLOW']['Met_Delay'])
 
-# get date and number of days
+# get current date and number of days
 date = datetime.now() - timedelta(days=n_days)
 num_day = date.timetuple().tm_yday - 1  # python 0 start correction
-date_format = date.strftime('%Y-%m-%d')
 year = date.strftime('%Y')
 
+# get VIC start date and the date to save the state
+# the last 60 days in the met dataset are provisional, so we start our run
+# the day before the first provisional day
+vic_start_date = datetime.now() - timedelta(days=(n_days + 60))
+vic_start_date_format = vic_start_date.strftime('%Y-%m-%d')
+
+# we save the state at the beginning of the first provisional day
+vic_save_state = datetime.now() - timedelta(days=n_days + 59)
+vic_save_state_format = vic_save_state.strftime('%Y-%m-%d')
+
+vic_save_state_year = vic_save_state.strftime('%Y')
+# python 0 start correction
+vic_save_state_num = vic_save_state.timetuple().tm_yday - 1
+
+# get lastyear's date that we use for subdaily met generation
 lastyear_date = datetime.now() - timedelta(days=365 + n_days)
+# python 0 start correction
 lastyear_num_day = lastyear_date.timetuple().tm_yday - 1
 lastyear_date_format = lastyear_date.strftime('%Y-%m-%d')
 lastyear = lastyear_date.strftime('%Y')
 
-# define the end date used in the subdaily generation
-subd_met_end_date = date.strftime('%Y-%m-%d')
+# define the end date for subdaily generation and the vic run
+end_date = date.strftime('%Y-%m-%d')
 
 num_startofyear = 0
 if calendar.isleap(int(lastyear)):
@@ -56,6 +71,7 @@ num_lat = 584
 num_lon = 1385
 
 # define variable names used when filling threads URL
+# an abbreviation and a full name is needed
 varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
             ('tmmx', 'air_temperature'), ('vs', 'wind_speed'),
             ('srad', 'surface_downwelling_shortwave_flux_in_air'), ('sph', 'specific_humidity')]
@@ -165,9 +181,9 @@ sph_attrs['missing_value'] = -32767.
 if not os.listdir(full_year_met_loc):
 
     # replace start date, end date and met location in the configuration file
-    kwargs = {'MODEL_DATE': date_format, 'SUBD_MET_START_DATE': lastyear_date_format,
-              'SUBD_MET_END_DATE': subd_met_end_date, 'MET_LOC': full_year_met_loc,
-              'FULL_YEAR': 'Year'}
+    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format,
+              'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format, 'VIC_SAVE_STATE': vic_save_state_format,
+              'MET_LOC': full_year_met_loc, 'FULL_YEAR': 'Year'}
     model_tools.replace_var_pythonic_config(
         old_config_file, new_config_file, header=None, **kwargs)
 
@@ -199,39 +215,70 @@ if not os.listdir(full_year_met_loc):
         ds.day.attrs = day_attrs
         ds.attrs = globe_attrs
 
-        # place data in dict
+        # place data in dict, the variable abbreviation is used as key
         met_dsets[var[0]] = ds
 
 
-else:  # if met data for the past year has been downloaded, we only have to download one day at a time.
+else:  # if met data for the past year has been downloaded, we only have to download the last 60 days.
 
     # replace start date, end date and met location in the configuration file
-    kwargs = {'MODEL_DATE': date_format, 'SUBD_MET_START_DATE': lastyear_date_format,
-              'SUBD_MET_END_DATE': subd_met_end_date, 'MET_LOC': daily_met_loc,
-              'FULL_YEAR': 'Day'}
+    kwargs = {'SUBD_MET_START_DATE': lastyear_date_format, 'END_DATE': end_date, 'VIC_START_DATE': vic_start_date_format, 'VIC_SAVE_STATE': vic_save_state_format,
+              'MET_LOC': prelim_met_loc, 'FULL_YEAR': 'Day'}
+
     model_tools.replace_var_pythonic_config(
         old_config_file, new_config_file, header=None, **kwargs)
 
-    met_loc = daily_met_loc
+    met_loc = prelim_met_loc
 
-    # download metdata from http://thredds.northwestknowledge.net
-    met_dsets = dict()
-    for var in varnames:
-        url = ("http://thredds.northwestknowledge.net:8080" +
-               "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
-               "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_day, num_day) +
-               "%s[%s:1:%s]" % (var[1], num_day, num_day) +
-               "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+    if vic_save_state_year == year:
 
-        # download data and add general attributes
-        ds = xr.open_dataset(url)
-        ds.lat.attrs = lat_attrs
-        ds.lon.attrs = lon_attrs
-        ds.day.attrs = day_attrs
-        ds.attrs = globe_attrs
+        # download metdata from http://thredds.northwestknowledge.net
+        met_dsets = dict()
+        for var in varnames:
+            url = ("http://thredds.northwestknowledge.net:8080" +
+                   "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
+                   "lat[0:1:%s],day[%s:1:%s]," % (num_lat, vic_save_state_num, num_day) +
+                   "%s[%s:1:%s]" % (var[1], vic_save_state_num, num_day) +
+                   "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
 
-        # place data in dict
-        met_dsets[var[0]] = ds
+            # download data and add general attributes
+            ds = xr.open_dataset(url)
+            ds.lat.attrs = lat_attrs
+            ds.lon.attrs = lon_attrs
+            ds.day.attrs = day_attrs
+            ds.attrs = globe_attrs
+
+            # place data in dict, the variable abbreviation is used as key
+            met_dsets[var[0]] = ds
+
+    else:
+        met_dsets = dict()
+        for var in varnames:
+            url_thisyear = ("http://thredds.northwestknowledge.net:8080" +
+                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], year, num_lon) +
+                            "lat[0:1:%s],day[%s:1:%s]," % (num_lat, num_startofyear, num_day) +
+                            "%s[%s:1:%s]" % (var[1], num_startofyear, num_day) +
+                            "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+
+            ds_thisyear = xr.open_dataset(url_thisyear)
+
+            url_lastyear = ("http://thredds.northwestknowledge.net:8080" +
+                            "/thredds/dodsC/MET/%s/%s_%s.nc?lon[0:1:%s]," % (var[0], var[0], lastyear, num_lon) +
+                            "lat[0:1:%s],day[%s:1:%s]," % (num_lat, vic_save_state_num, num_endofyear) +
+                            "%s[%s:1:%s]" % (var[1], vic_save_state_num, num_endofyear) +
+                            "[0:1:%s][0:1:%s]" % (num_lon, num_lat))
+
+            ds_lastyear = xr.open_dataset(url_lastyear)
+
+            # concatenate the two datasets and add general attributes
+            ds = xr.concat([ds_lastyear, ds_thisyear], 'day')
+            ds.lat.attrs = lat_attrs
+            ds.lon.attrs = lon_attrs
+            ds.day.attrs = day_attrs
+            ds.attrs = globe_attrs
+
+            # place data in dict, the variable abbreviation is used as key
+            met_dsets[var[0]] = ds
 
 # add variable specific attributes and save as netcdf
 met_dsets['pr'].precipitation_amount.attrs = pr_attrs

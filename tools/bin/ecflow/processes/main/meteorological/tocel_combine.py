@@ -8,7 +8,6 @@ and using subprocess.
 This script changes tmin and tmax units from Kelvin to Celsius
 and combines precip, tmax, tmin, and wind into 1 file for each grid cell. 
 """
-import pandas as pd
 import numpy as np
 import os
 from monitor.share import KELVIN
@@ -21,7 +20,6 @@ wind_dir = '{WIND_DIREC}'
 srad_dir = '{SRAD_DIREC}'
 sph_dir = '{SPH_DIREC}'
 final_dir = '{FINAL_DIREC}'
-daily_met_loc = '{DAILY_DIREC}'
 full_year = '{FULL_YEAR}'
 
 # read in tmin and tmax
@@ -46,13 +44,15 @@ if full_year == 'Year':
     np.savetxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), combined, delimiter='  ', fmt="%.5f")
 
-else:  # if we only downloaded yesterday's data we need to append it to the existing data
+else:  # if we only downloaded the last 60 days we need to append it to the existing data
     # read in the existing data
     existing_data = np.genfromtxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), dtype='float')
-    # delete the first day's met data
-    existing_data = np.delete(existing_data, 0, 0)
-    # append yesterday's met data
+    # remove the last 60 days
+    existing_data = existing_data[0:len(existing_data) - 60]
+    # remove the first day
+    existing_data = existing_data[1:len(existing_data)]
+    # append newest met data
     output = np.vstack([existing_data, combined])
     np.savetxt(os.path.join(
         final_dir, '{DATA_LAT_LON}'), output, delimiter='  ', fmt="%.5f")

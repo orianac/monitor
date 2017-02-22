@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-creating snow water equivalent (swe) percentiles
-usage: <python> <swe_plot.py> <configuration.cfg>
+creating total moisture (tm) percentiles
+usage: <python> <tm_plot.py> <configuration.cfg>
 
 Reads in a netcdf file converted from VIC fluxes.
 Extracts one day's data based on date in config file.
 Reads in saved cdfs.
-Interpolates every value's percentile 
-based on where it falls relative to historic range. 
+Interpolates every value's percentile
+based on where it falls relative to historic range.
 Save as new netcdf file.
 """
 from datetime import datetime, timedelta
@@ -25,7 +25,7 @@ from tonic.io import read_config
 from collections import OrderedDict
 
 # read in configuration file
-parser = argparse.ArgumentParser(description='Calculate SWE percentiles')
+parser = argparse.ArgumentParser(description='Calculate TM percentiles')
 parser.add_argument('config_file', metavar='config_file',
                     help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
@@ -37,7 +37,7 @@ n_days = int(config_dict['ECFLOW']['Met_Delay'])
 
 # number of plotting positions
 num_pp = int(config_dict['PERCENTILES']['num_plot_pos'])
-cdf_loc = config_dict['PERCENTILES']['cdf_SWE']
+cdf_loc = config_dict['PERCENTILES']['cdf_Total_Moist']
 outfile_loc = config_dict['PERCENTILES']['Percentile_Loc']
 
 vic_start_date = config_dict['VIC']['vic_start_date']
@@ -73,16 +73,16 @@ max_q = max(q) + min_q
 
 # select out time and variable data
 ds_day = ds.sel(time=date)
-swe_ds = ds_day['OUT_SWE']
+tm_ds = ds_day['OUT_SOIL_MOIST'].sum(dim='nlayer') + ds_day['OUT_SWE']
 
 # create a dictionary containing the lat, lon and corresponding percentile
-# value (if one exists)
+# value
 d = []
 
 for lat, lon in zip(latitude, longitude):
 
     # iterate through all latitudes and longitudes
-    ds_lat = swe_ds.sel(lat=lat)
+    ds_lat = tm_ds.sel(lat=lat)
     ds_lon = ds_lat.sel(lon=lon)
 
     value = ds_lon.values
@@ -97,49 +97,42 @@ for lat, lon in zip(latitude, longitude):
                           delimiter=None, header=None)
         x = cdf[0]
 
-        # 10mm threshold (this is based on current monitor)
-
-        if (value < 10) and (x.mean() < 10):
-            combine = (lat, lon)
+        try:
+            # interpolate percentile based on where value falls
+            # relative to historic range
+            f = interp1d(x, q)
+            percentile = f(value)
+            combine = (lat, lon, float(percentile))
             d.append(combine)
-        else:
-
-            try:
-                # interpolate percentile based on where value falls
-                # relative to historic range
-                f = interp1d(x, q)
-                percentile = f(value)
-                combine = (lat, lon, float(percentile))
-                d.append(combine)
 
             # if interpolation fails then a value is assigned based on
             # whether it is higher or lower than the range
-            except ValueError:
-                if (value > max(x)):
-                    percentile = (max_q)
-                    combine = (lat, lon, percentile)
-                    d.append(combine)
-                else:
-                    percentile = (min_q)
-                    combine = (lat, lon, percentile)
-                    d.append(combine)
+        except ValueError:
+            if (value > max(x)):
+                percentile = (max_q)
+                combine = (lat, lon, percentile)
+                d.append(combine)
+            else:
+                percentile = (min_q)
+                combine = (lat, lon, percentile)
+                d.append(combine)
     except IOError:
         percentile = value
         combine = (lat, lon)
         d.append(combine)
 
 # Dictionary to DataFrame to Dataset
-df = pd.DataFrame(d, columns=["Latitude", "Longitude", "swepercentile"])
-a = df['swepercentile'].values
+df = pd.DataFrame(d, columns=["Latitude", "Longitude", "tmpercentile"])
+a = df['tmpercentile'].values
 new = a.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new)},
+dsx = xr.Dataset({'tmpercentile': (['lat', 'lon'], new)},
                  coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999
-dsx.swepercentile.attrs = dsx_attrs
+dsx.tmpercentile.attrs = dsx_attrs
 
 # save to netcdf
-dsx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_swepercentile_%s.nc' %
+dsx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_tmpercentile_%s.nc' %
                            (date)), mode='w', format='NETCDF4')
