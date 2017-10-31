@@ -102,7 +102,31 @@ for lat, lon in zip(latitude, longitude):
             # relative to historic range
             f = interp1d(x, q)
             percentile = f(value)
-            combine = (lat, lon, float(percentile))
+
+            if percentile < 2:
+                category = 0
+            elif 2 <= percentile < 5:
+                category = 1
+            elif 5 <= percentile < 10:
+                category = 2
+            elif 10 <= percentile < 20:
+                category = 3
+            elif 20 <= percentile < 30:
+                category = 4
+            elif 30 <= percentile < 70:
+                category = 5
+            elif 70 <= percentile < 80:
+                category = 6
+            elif 80 <= percentile < 90:
+                category = 7
+            elif 90 <= percentile < 95:
+                category = 8
+            elif 95 <= percentile < 98:
+                category = 9
+            elif percentile >= 98:
+                category = 10
+
+            combine = (lat, lon, float(percentile), category)
             d.append(combine)
 
             # if interpolation fails then a value is assigned based on
@@ -110,27 +134,32 @@ for lat, lon in zip(latitude, longitude):
         except ValueError:
             if (value > max(x)):
                 percentile = (max_q)
-                combine = (lat, lon, percentile)
+                category = 10
+                combine = (lat, lon, percentile, category)
                 d.append(combine)
             else:
                 percentile = (min_q)
-                combine = (lat, lon, percentile)
+                category = 0
+                combine = (lat, lon, percentile, category)
                 d.append(combine)
     except IOError:
-        percentile = value
-        combine = (lat, lon)
+        combine = (lat, lon, -9999.0, -9999.0)
         d.append(combine)
 
 # Dictionary to DataFrame to Dataset
-df = pd.DataFrame(d, columns=["Latitude", "Longitude", "smpercentile"])
+df = pd.DataFrame(
+    d, columns=["Latitude", "Longitude", "smpercentile", "category"])
 a = df['smpercentile'].values
 new = a.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'smpercentile': (['lat', 'lon'], new)},
+b = df['category'].values
+newb = b.reshape(num_lat, num_lon)
+
+dsx = xr.Dataset({'smpercentile': (['lat', 'lon'], new), 'category': (['lat', 'lon'], newb)},
                  coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
-dsx_attrs['_FillValue'] = -9999
+dsx_attrs['_FillValue'] = -9999.0
 dsx.smpercentile.attrs = dsx_attrs
 
 # save to netcdf

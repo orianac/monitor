@@ -99,9 +99,10 @@ for lat, lon in zip(latitude, longitude):
 
         # 10mm threshold (this is based on current monitor)
 
-        if (value < 10) and (x.mean() < 10):
-            combine = (lat, lon)
+        if (value < 10) and (x.mean() < 10) or math.isnan(value):
+            combine = (lat, lon, np.nan, np.nan)
             d.append(combine)
+
         else:
 
             try:
@@ -109,35 +110,68 @@ for lat, lon in zip(latitude, longitude):
                 # relative to historic range
                 f = interp1d(x, q)
                 percentile = f(value)
-                combine = (lat, lon, float(percentile))
+
+                if percentile < 2:
+                    category = 0
+                elif 2 <= percentile < 5:
+                    category = 1
+                elif 5 <= percentile < 10:
+                    category = 2
+                elif 10 <= percentile < 20:
+                    category = 3
+                elif 20 <= percentile < 30:
+                    category = 4
+                elif 30 <= percentile < 70:
+                    category = 5
+                elif 70 <= percentile < 80:
+                    category = 6
+                elif 80 <= percentile < 90:
+                    category = 7
+                elif 90 <= percentile < 95:
+                    category = 8
+                elif 95 <= percentile < 98:
+                    category = 9
+                elif percentile >= 98:
+                    category = 10
+
+                combine = (lat, lon, float(percentile), category)
                 d.append(combine)
+
+            except NameError:
+                print value
 
             # if interpolation fails then a value is assigned based on
             # whether it is higher or lower than the range
             except ValueError:
                 if (value > max(x)):
                     percentile = (max_q)
-                    combine = (lat, lon, percentile)
+                    category = 10
+                    combine = (lat, lon, percentile, category)
                     d.append(combine)
                 else:
                     percentile = (min_q)
-                    combine = (lat, lon, percentile)
+                    category = 0
+                    combine = (lat, lon, percentile, category)
                     d.append(combine)
     except IOError:
         percentile = value
-        combine = (lat, lon)
+        combine = (lat, lon, -9999.0, -9999.0)
         d.append(combine)
 
 # Dictionary to DataFrame to Dataset
-df = pd.DataFrame(d, columns=["Latitude", "Longitude", "swepercentile"])
+df = pd.DataFrame(
+    d, columns=["Latitude", "Longitude", "swepercentile", "category"])
 a = df['swepercentile'].values
 new = a.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new)},
+b = df['category'].values
+newb = b.reshape(num_lat, num_lon)
+
+dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new), 'category': (['lat', 'lon'], newb)},
                  coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
-dsx_attrs['_FillValue'] = -9999
+dsx_attrs['_FillValue'] = -9999.0
 dsx.swepercentile.attrs = dsx_attrs
 
 # save to netcdf

@@ -37,7 +37,7 @@ save_state = parse(vic_save_state)
 
 # generate the path to the initial state file
 in_state = os.path.join(state_path, 'state.%s%s%s_00000.nc' %
-                        (start.year, start.month, start.day))
+                        (vic_start_date[:4], vic_start_date[5:7], vic_start_date[8:10]))
 
 kwargs = {'Start_Year': start.year, 'Start_Month': start.month, 'Start_Day': start.day,
           'End_Year': end.year, 'End_Month': end.month, 'End_Day': end.day,
