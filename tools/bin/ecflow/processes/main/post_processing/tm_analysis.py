@@ -26,8 +26,10 @@ from collections import OrderedDict
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate TM percentiles')
-parser.add_argument('config_file', metavar='config_file',
-                    help='the python configuration file, see template: /monitor/config/python_template.cfg')
+parser.add_argument(
+    'config_file',
+    metavar='config_file',
+    help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -102,7 +104,7 @@ for lat, lon in zip(latitude, longitude):
             # relative to historic range
             f = interp1d(x, q)
             percentile = f(value)
-            
+
             if percentile < 2:
                 category = 0
             elif 2 <= percentile < 5:
@@ -125,7 +127,7 @@ for lat, lon in zip(latitude, longitude):
                 category = 9
             elif percentile >= 98:
                 category = 10
-            
+
             combine = (lat, lon, float(percentile), category)
             d.append(combine)
 
@@ -147,15 +149,21 @@ for lat, lon in zip(latitude, longitude):
         d.append(combine)
 
 # Dictionary to DataFrame to Dataset
-df = pd.DataFrame(d, columns=['Latitude', 'Longitude', 'tmpercentile', 'category'])
+df = pd.DataFrame(
+    d,
+    columns=[
+        'Latitude',
+        'Longitude',
+        'tmpercentile',
+        'category'])
 a = df['tmpercentile'].values
 new = a.reshape(num_lat, num_lon)
 
 b = df['category'].values
 newb = b.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'tmpercentile': (['lat', 'lon'], new), 'category': (['lat', 'lon'], newb)},
-                 coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
+dsx = xr.Dataset({'tmpercentile': (['lat', 'lon'], new), 'category': (
+    ['lat', 'lon'], newb)}, coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999.0

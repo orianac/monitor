@@ -26,8 +26,10 @@ from collections import OrderedDict
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate SM percentiles')
-parser.add_argument('config_file', metavar='config_file',
-                    help='the python configuration file, see template: /monitor/config/python_template.cfg')
+parser.add_argument(
+    'config_file',
+    metavar='config_file',
+    help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -155,8 +157,8 @@ new = a.reshape(num_lat, num_lon)
 b = df['category'].values
 newb = b.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'smpercentile': (['lat', 'lon'], new), 'category': (['lat', 'lon'], newb)},
-                 coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
+dsx = xr.Dataset({'smpercentile': (['lat', 'lon'], new), 'category': (
+    ['lat', 'lon'], newb)}, coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999.0

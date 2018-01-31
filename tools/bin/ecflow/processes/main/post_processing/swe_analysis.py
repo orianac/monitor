@@ -6,8 +6,8 @@ usage: <python> <swe_plot.py> <configuration.cfg>
 Reads in a netcdf file converted from VIC fluxes.
 Extracts one day's data based on date in config file.
 Reads in saved cdfs.
-Interpolates every value's percentile 
-based on where it falls relative to historic range. 
+Interpolates every value's percentile
+based on where it falls relative to historic range.
 Save as new netcdf file.
 '''
 from datetime import datetime, timedelta
@@ -26,8 +26,10 @@ from collections import OrderedDict
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate SWE percentiles')
-parser.add_argument('config_file', metavar='config_file',
-                    help='the python configuration file, see template: /monitor/config/python_template.cfg')
+parser.add_argument(
+    'config_file',
+    metavar='config_file',
+    help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -167,8 +169,8 @@ new = a.reshape(num_lat, num_lon)
 b = df['category'].values
 newb = b.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new), 'category': (['lat', 'lon'], newb)},
-                 coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
+dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new), 'category': (
+    ['lat', 'lon'], newb)}, coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999.0
