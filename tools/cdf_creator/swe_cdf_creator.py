@@ -77,7 +77,7 @@ for lat, lon in zip(latitude, longitude):
             gb.get_group((tomorrow.month, tomorrow.day)), 
             gb.get_group((tomorrow_2.month, tomorrow_2.day))])
 
-        cc.sort()
+        cc.sort_values(inplace=True)
 
         month = current_day.strftime('%B')
 
