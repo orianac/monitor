@@ -40,11 +40,19 @@ sftp = ssh.open_sftp()
 vars = ['swe', 'sm', 'tm']
 for var in vars:
     if date[-2:] == '01':
-        sftp.put(os.path.join(source_loc, 'vic-metdata_%spercentile_%s.nc' %
-                              (var, date)), os.path.join(dest_loc, 'vic-metdata_%spercentile_%s%s.nc' % (var, month, str(1))))
+        sftp.put(
+            os.path.join(
+                source_loc, 'vic-metdata_%spercentile_%s.nc' %
+                (var, date)), os.path.join(
+                dest_loc, 'vic-metdata_%spercentile_%s%s.nc' %
+                (var, month, str(1))))
     else:
-        sftp.put(os.path.join(source_loc, 'vic-metdata_%spercentile_%s.nc' %
-                              (var, date)), os.path.join(dest_loc, 'vic-metdata_%spercentilei_CURRENT.nc' % (var)))
+        sftp.put(
+            os.path.join(
+                source_loc, 'vic-metdata_%spercentile_%s.nc' %
+                (var, date)), os.path.join(
+                dest_loc, 'vic-metdata_%spercentilei_CURRENT.nc' %
+                (var)))
 
 # create a .txt file to include the date
 f = sftp.open(os.path.join(dest_loc, 'lastDate.txt'), 'w+')

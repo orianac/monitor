@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""
+'''
 creating snow water equivalent (swe) percentiles
 usage: <python> <swe_plot.py> <configuration.cfg>
 
@@ -9,7 +9,7 @@ Reads in saved cdfs.
 Interpolates every value's percentile 
 based on where it falls relative to historic range. 
 Save as new netcdf file.
-"""
+'''
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -46,10 +46,10 @@ vic_start_date = config_dict['VIC']['vic_start_date']
 date_unformat = datetime.now() - timedelta(days=n_days)
 
 date = date_unformat.strftime('%Y-%m-%d')
-month_day = date_unformat.strftime("%B_%-d")
+month_day = date_unformat.strftime('%B_%-d')
 
 # read VIC output
-f = "fluxes.%s.nc" % (vic_start_date)
+f = 'fluxes.%s.nc' % (vic_start_date)
 ds = xr.open_dataset(os.path.join(direc, f))
 
 # create list of all latitudes and longitudes for full rectangle
@@ -91,7 +91,7 @@ for lat, lon in zip(latitude, longitude):
     # if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
     # this is done to make creating the xarray dataset easier later on
     try:
-        cdf_file = "%s_%s" % (lat, lon)
+        cdf_file = '%s_%s' % (lat, lon)
         cdf_path = os.path.join(cdf_loc, month_day, cdf_file)
         cdf = pd.read_csv(cdf_path, index_col=None,
                           delimiter=None, header=None)
@@ -160,7 +160,7 @@ for lat, lon in zip(latitude, longitude):
 
 # Dictionary to DataFrame to Dataset
 df = pd.DataFrame(
-    d, columns=["Latitude", "Longitude", "swepercentile", "category"])
+    d, columns=['Latitude', 'Longitude', 'swepercentile', 'category'])
 a = df['swepercentile'].values
 new = a.reshape(num_lat, num_lon)
 

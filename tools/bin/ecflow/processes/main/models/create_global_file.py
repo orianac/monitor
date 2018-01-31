@@ -36,13 +36,21 @@ end = parse(vic_end_date)
 save_state = parse(vic_save_state)
 
 # generate the path to the initial state file
-in_state = os.path.join(state_path, 'state.%s%s%s_00000.nc' %
-                        (vic_start_date[:4], vic_start_date[5:7], vic_start_date[8:10]))
+in_state = os.path.join(state_path, 'state.%s%s%s_00000.nc' % (
+    vic_start_date[:4], vic_start_date[5:7], vic_start_date[8:10]))
 
-kwargs = {'Start_Year': start.year, 'Start_Month': start.month, 'Start_Day': start.day,
-          'End_Year': end.year, 'End_Month': end.month, 'End_Day': end.day,
-          'State_Year': save_state.year, 'State_Month': save_state.month, 'State_Day': save_state.day,
-          'In_State': in_state, 'State_Path': state_path}
+kwargs = {
+    'Start_Year': start.year,
+    'Start_Month': start.month,
+    'Start_Day': start.day,
+    'End_Year': end.year,
+    'End_Month': end.month,
+    'End_Day': end.day,
+    'State_Year': save_state.year,
+    'State_Month': save_state.month,
+    'State_Day': save_state.day,
+    'In_State': in_state,
+    'State_Path': state_path}
 
 
 model_tools.replace_var_pythonic_config(
