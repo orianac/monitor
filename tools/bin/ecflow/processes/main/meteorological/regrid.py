@@ -39,7 +39,7 @@ for var in param:
     # out file
     regrid_file = os.path.join(met_loc, '%s.regrid.nc' % (var))
 
-    # remove previous days file, cdo doesn't overwrite
+    # remove previous day's file, cdo doesn't overwrite
     if os.path.isfile(regrid_file):
         os.remove(regrid_file)
 

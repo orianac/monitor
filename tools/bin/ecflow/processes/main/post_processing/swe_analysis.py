@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-"""
+'''
 creating snow water equivalent (swe) percentiles
 usage: <python> <swe_plot.py> <configuration.cfg>
 
 Reads in a netcdf file converted from VIC fluxes.
 Extracts one day's data based on date in config file.
 Reads in saved cdfs.
-Interpolates every value's percentile 
-based on where it falls relative to historic range. 
+Interpolates every value's percentile
+based on where it falls relative to historic range.
 Save as new netcdf file.
-"""
+'''
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -26,8 +26,10 @@ from collections import OrderedDict
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Calculate SWE percentiles')
-parser.add_argument('config_file', metavar='config_file',
-                    help='the python configuration file, see template: /monitor/config/python_template.cfg')
+parser.add_argument(
+    'config_file',
+    metavar='config_file',
+    help='the python configuration file, see template: /monitor/config/python_template.cfg')
 args = parser.parse_args()
 config_dict = read_config(args.config_file)
 
@@ -46,10 +48,10 @@ vic_start_date = config_dict['VIC']['vic_start_date']
 date_unformat = datetime.now() - timedelta(days=n_days)
 
 date = date_unformat.strftime('%Y-%m-%d')
-month_day = date_unformat.strftime("%B_%-d")
+month_day = date_unformat.strftime('%B_%-d')
 
 # read VIC output
-f = "fluxes.%s.nc" % (vic_start_date)
+f = 'fluxes.%s.nc' % (vic_start_date)
 ds = xr.open_dataset(os.path.join(direc, f))
 
 # create list of all latitudes and longitudes for full rectangle
@@ -91,7 +93,7 @@ for lat, lon in zip(latitude, longitude):
     # if cdf cannot be read then that lat lon is saved in the dictionary without a percentile
     # this is done to make creating the xarray dataset easier later on
     try:
-        cdf_file = "%s_%s" % (lat, lon)
+        cdf_file = '%s_%s' % (lat, lon)
         cdf_path = os.path.join(cdf_loc, month_day, cdf_file)
         cdf = pd.read_csv(cdf_path, index_col=None,
                           delimiter=None, header=None)
@@ -99,9 +101,10 @@ for lat, lon in zip(latitude, longitude):
 
         # 10mm threshold (this is based on current monitor)
 
-        if (value < 10) and (x.mean() < 10):
-            combine = (lat, lon)
+        if (value < 10) and (x.mean() < 10) or math.isnan(value):
+            combine = (lat, lon, np.nan, np.nan)
             d.append(combine)
+
         else:
 
             try:
@@ -109,35 +112,68 @@ for lat, lon in zip(latitude, longitude):
                 # relative to historic range
                 f = interp1d(x, q)
                 percentile = f(value)
-                combine = (lat, lon, float(percentile))
+
+                if percentile < 2:
+                    category = 0
+                elif 2 <= percentile < 5:
+                    category = 1
+                elif 5 <= percentile < 10:
+                    category = 2
+                elif 10 <= percentile < 20:
+                    category = 3
+                elif 20 <= percentile < 30:
+                    category = 4
+                elif 30 <= percentile < 70:
+                    category = 5
+                elif 70 <= percentile < 80:
+                    category = 6
+                elif 80 <= percentile < 90:
+                    category = 7
+                elif 90 <= percentile < 95:
+                    category = 8
+                elif 95 <= percentile < 98:
+                    category = 9
+                elif percentile >= 98:
+                    category = 10
+
+                combine = (lat, lon, float(percentile), category)
                 d.append(combine)
+
+            except NameError:
+                print value
 
             # if interpolation fails then a value is assigned based on
             # whether it is higher or lower than the range
             except ValueError:
                 if (value > max(x)):
                     percentile = (max_q)
-                    combine = (lat, lon, percentile)
+                    category = 10
+                    combine = (lat, lon, percentile, category)
                     d.append(combine)
                 else:
                     percentile = (min_q)
-                    combine = (lat, lon, percentile)
+                    category = 0
+                    combine = (lat, lon, percentile, category)
                     d.append(combine)
     except IOError:
         percentile = value
-        combine = (lat, lon)
+        combine = (lat, lon, -9999.0, -9999.0)
         d.append(combine)
 
 # Dictionary to DataFrame to Dataset
-df = pd.DataFrame(d, columns=["Latitude", "Longitude", "swepercentile"])
+df = pd.DataFrame(
+    d, columns=['Latitude', 'Longitude', 'swepercentile', 'category'])
 a = df['swepercentile'].values
 new = a.reshape(num_lat, num_lon)
 
-dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new)},
-                 coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
+b = df['category'].values
+newb = b.reshape(num_lat, num_lon)
+
+dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new), 'category': (
+    ['lat', 'lon'], newb)}, coords={'lon': (['lon'], un_lon), 'lat': (['lat'], un_lat)})
 
 dsx_attrs = OrderedDict()
-dsx_attrs['_FillValue'] = -9999
+dsx_attrs['_FillValue'] = -9999.0
 dsx.swepercentile.attrs = dsx_attrs
 
 # save to netcdf

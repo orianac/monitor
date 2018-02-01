@@ -44,12 +44,12 @@ def add_map_features(axis, states_provinces=True, country_borders=True,
             category='physical',
             name='land',
             scale='50m',
-            facecolor='gray')
-        axis.add_feature(land, facecolor='gray', zorder=1)
+            facecolor='silver')
+        axis.add_feature(land, facecolor='silver', zorder=1)
     if ocean:
         ocean = cfeature.NaturalEarthFeature(
             category='physical',
             name='ocean',
             scale='50m',
-            facecolor='blue')
+            facecolor='lightblue')
         axis.add_feature(ocean, facecolor='lightblue', zorder=1)
