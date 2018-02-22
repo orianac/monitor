@@ -175,6 +175,7 @@ dsx = xr.Dataset({'swepercentile': (['lat', 'lon'], new), 'category': (
 dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999.0
 dsx.swepercentile.attrs = dsx_attrs
+dsx.attrs['analysis_date'] = date_unformat.strftime('%Y/%m/%d')
 
 # save to netcdf
 dsx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_swepercentile_%s.nc' %
