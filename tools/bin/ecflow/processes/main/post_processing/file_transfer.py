@@ -24,8 +24,7 @@ config_dict = read_config(args.config_file)
 source_loc = config_dict['PERCENTILES']['Percentile_Loc']
 dest_loc = config_dict['PERCENTILES']['Percentile_Dest']
 date = config_dict['VIC']['vic_end_date']
-
-current_date = datetime.now()
+current_date = datetime.strptime(date, '%Y-%m-%d')
 month = current_date.strftime("%B_%-d").upper()[:3]
 
 # set up a connection to the NKN network
@@ -46,14 +45,15 @@ for var in vars:
                 (var, date)), os.path.join(
                 dest_loc, 'vic-metdata_%spercentile_%s%s.nc' %
                 (var, month, str(1))))
-    else:
-        sftp.put(
-            os.path.join(
-                source_loc, 'vic-metdata_%spercentile_%s.nc' %
-                (var, date)), os.path.join(
-                dest_loc, 'vic-metdata_%spercentilei_CURRENT.nc' %
-                (var)))
-
+    sftp.put(
+        os.path.join(
+            source_loc, 'vic-metdata_%spercentile_%s.nc' %
+            (var, date)), os.path.join(
+            dest_loc, 'vic-metdata_%spercentile_CURRENT.nc' %
+            (var)))
+print(os.path.join(
+            source_loc, 'vic-metdata_%spercentile_%s.nc' %
+            (var, date)))
 # create a .txt file to include the date
 f = sftp.open(os.path.join(dest_loc, 'lastDate.txt'), 'w+')
 f.write('%s/%s/%s' % (date[:4], date[5:7], date[8:10]))
