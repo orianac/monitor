@@ -164,6 +164,8 @@ dsx_attrs = OrderedDict()
 dsx_attrs['_FillValue'] = -9999.0
 dsx.smpercentile.attrs = dsx_attrs
 dsx.attrs['analysis_date'] = date_unformat.strftime('%Y/%m/%d')
+for attr in ['VIC_Model_Version', 'VIC_GIT_VERSION', 'VIC_Driver']:
+    dsx.attrs[attr] = ds.attrs[attr]
 
 # save to netcdf
 dsx.to_netcdf(os.path.join(outfile_loc, 'vic-metdata_smpercentile_%s.nc' %
