@@ -1,4 +1,4 @@
-%include <qsub.h>
+%include <qsub_build.h>
 %include <head.h>
 %manual
 Run get_metdata.py.

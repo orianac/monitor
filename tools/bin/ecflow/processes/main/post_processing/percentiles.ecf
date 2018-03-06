@@ -1,5 +1,5 @@
 #!/bin/bash
-%include <qsub.h>
+%include <qsub_build.h>
 %include <head.h>
 %manual
 Creates netCDFs with percentiles for soil moisture, swe, 
