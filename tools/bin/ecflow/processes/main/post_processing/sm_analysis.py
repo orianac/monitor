@@ -45,9 +45,9 @@ outfile_loc = config_dict['PERCENTILES']['Percentile_Loc']
 vic_start_date = config_dict['VIC']['vic_start_date']
 
 # how many days behind metdata is from realtime
-date_unformat = datetime.now() - timedelta(days=n_days)
+date = config_dict['VIC']['vic_end_date']
 
-date = date_unformat.strftime('%Y-%m-%d')
+date_unformat = datetime.strptime(date, '%Y-%m-%d')
 month_day = date_unformat.strftime('%B_%-d')
 
 # read VIC output
