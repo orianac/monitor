@@ -7,6 +7,7 @@ This script creates a global file from the template with the correct
  model start and end dates.
 """
 import argparse
+import subprocess
 from tonic.io import read_config
 from monitor import model_tools
 import os
@@ -29,6 +30,9 @@ vic_start_date = config_dict['VIC']['vic_start_date']
 vic_end_date = config_dict['VIC']['vic_end_date']
 vic_save_state = config_dict['VIC']['vic_save_state']
 
+forcing_prefix = '{0}-{1}.'.format(vic_start_date.replace('-', ''),
+                                   vic_end_date.replace('-', '')) 
+
 # parse out year, month, and day from the model dates, which have
 # the form YYYY-MM-DD
 start = parse(vic_start_date)
@@ -50,8 +54,11 @@ kwargs = {
     'State_Month': save_state.month,
     'State_Day': save_state.day,
     'In_State': in_state,
-    'State_Path': state_path}
+    'State_Path': state_path,
+    'Forcing_Prefix': forcing_prefix}
 
 
 model_tools.replace_var_pythonic_config(
     global_template, global_file_path, header=None, **kwargs)
+
+subprocess.run([config_dict['VIC']['Executable'], '-g', global_file_path])
