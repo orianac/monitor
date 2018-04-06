@@ -1,0 +1,15 @@
+#!/bin/bash
+%include <qsub.h>
+#PBS -l walltime=12:00:00
+#PBS -l nodes=1:ppn=16
+%include <head.h>
+%manual
+Runs VIC 5 using image driver.
+%end
+
+echo "Today is $(date)"
+source activate monitor_py3
+
+python %ECF_HOME%/processes/main/models/prep_and_run_vic.py %WORKING_CFG_FILE% SEAS_FCST
+
+%include <tail.h>

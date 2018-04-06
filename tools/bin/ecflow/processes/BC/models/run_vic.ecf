@@ -8,6 +8,6 @@ Runs VIC 5 using image driver.
 echo "Today is $(date)"
 source activate monitor_py3
 
-python %ECF_HOME%/processes/main/models/prep_and_run_vic.py %WORKING_CFG_FILE%
+python %ECF_HOME%/processes/main/models/prep_and_run_vic_twice.py %WORKING_CFG_FILE% MONITOR
 
 %include <tail.h>
