@@ -8,6 +8,6 @@ Updates MetSim configuration file and runs MetSim to disaggregate forcings
 echo "Today is $(date)"
 
 source activate monitor_py3
-python %ECF_HOME%/processes/main/meteorological/run_metsim_SeasFcst.py %WORKING_CFG_FILE%
+python %ECF_HOME%/processes/main/meteorological/run_metsim_metgrid.py %WORKING_CFG_FILE% SEAS_FCST
 
 %include <tail.h>
