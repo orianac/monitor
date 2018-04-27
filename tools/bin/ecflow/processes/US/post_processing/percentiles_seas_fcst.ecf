@@ -1,0 +1,22 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Creates netCDFs with percentiles for soil moisture, swe, 
+and soil moisture + swe (total moisture). 
+Transfers the netCDFs to the NKN network. 
+%end
+
+echo "Today is $(date)"
+
+source activate ncdata
+export CDO=/civil/hydro/toolbox/miniconda2/envs/ncdata/bin/cdo
+python %ECF_HOME%/processes/main/post_processing/merge_fluxes.py %WORKING_CFG_FILE% MONITOR
+
+source activate monitor_py3
+python %ECF_HOME%/processes/main/post_processing/storage_analysis.py %WORKING_CFG_FILE% MONITOR
+
+python %ECF_HOME%/processes/main/post_processing/ro_analysis.py %WORKING_CFG_FILE% MONITOR
+
+%include <tail.h>
+

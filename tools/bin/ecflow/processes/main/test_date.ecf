@@ -1,0 +1,16 @@
+%include <qsub_build.h>
+%include <head.h>
+%manual
+Check date to determine whether we will run forecast update
+%end
+
+echo "Today is $(date)"
+day=$(date +%%-d)
+#TODO move day check/event to a separate task
+if [[ $day -eq 8 ]] ; then
+    ecflow_client --event=run_fcst
+else
+    ecflow_client --event=skip_fcst
+fi
+
+%include <tail.h>

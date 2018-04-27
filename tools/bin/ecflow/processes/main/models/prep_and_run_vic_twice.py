@@ -8,11 +8,13 @@ This script creates a global file from the template with the correct
 """
 import argparse
 import subprocess
-from tonic.io import read_config
-from monitor import model_tools
 import os
 from dateutil.parser import parse
-######### ----------------------------------------###########
+from datetime import timedelta
+
+from tonic.io import read_config
+from monitor import model_tools
+
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Reorder dimensions')
@@ -51,13 +53,15 @@ save_state = parse(vic_save_state)
 in_state = os.path.join(in_state_path, 'state.%s%s%s_00000.nc' % (
     vic_start_date[:4], vic_start_date[5:7], vic_start_date[8:10]))
 
+# run to the date at which we first want to save the state (for tomorrow's
+# monitor)
 kwargs = {
     'Start_Year': start.year,
     'Start_Month': start.month,
     'Start_Day': start.day,
-    'End_Year': end.year,
-    'End_Month': end.month,
-    'End_Day': end.day,
+    'End_Year': save_state.year,
+    'End_Month': save_state.month,
+    'End_Day': save_state.day,
     'State_Year': save_state.year,
     'State_Month': save_state.month,
     'State_Day': save_state.day,
@@ -70,4 +74,31 @@ kwargs = {
 model_tools.replace_var_pythonic_config(
     global_template, global_file_path, header=None, **kwargs)
 
-subprocess.run(['mpi.hydra', '-np', '15', config_dict['ECFLOW']['Executable'], '-g', global_file_path])
+subprocess.run(['mpirun', '-np', '15', config_dict['ECFLOW']['Executable'], '-g', global_file_path])
+
+
+# generate the path to the initial state file
+in_state = os.path.join(state_path, 'state.{0}{1:02d}{2:02d}_00000.nc'.format(
+    save_state.year, save_state.month, save_state.day))
+state_date = end + timedelta(days=1)
+# run to current date & save state to initialize medium-range forecast
+kwargs = {
+    'Start_Year': save_state.year,
+    'Start_Month': save_state.month,
+    'Start_Day': save_state.day,
+    'End_Year': end.year,
+    'End_Month': end.month,
+    'End_Day': end.day,
+    'State_Year': state_date.year,
+    'State_Month': state_date.month,
+    'State_Day': state_date.day,
+    'In_State': in_state,
+    'State_Path': state_path,
+    'Result_Path': result_path,
+    'Forcing_Prefix': forcing_prefix}
+
+
+model_tools.replace_var_pythonic_config(
+    global_template, global_file_path, header=None, **kwargs)
+
+subprocess.run([config_dict['ECFLOW']['Executable'], '-g', global_file_path])

@@ -24,7 +24,7 @@ args = parser.parse_args()
 config_dict = read_config(args.config_file)
 section = args.time_horizon_type
 # read in the source and destination paths and current date
-source_loc = config_dict[section]['Percentile_Loc']
+source_loc = config_dict[section]['Percentile_Merge_Loc']
 dest_loc = config_dict['PERCENTILES']['Percentile_Dest']
 date = config_dict[section]['End_Date']
 current_date = datetime.strptime(date, '%Y-%m-%d')
@@ -57,30 +57,20 @@ for var in vars:
     print(os.path.join(
             source_loc, 'vic-metdata_%spercentile_%s.nc' %
             (var, date)))
-var = 'ro'
 for agg in ['7d', '15d', '30d', '60d', '90d', 'ccy', 'cwy']:
-    if date[-2:] == '01':
-        sftp.put(
-            os.path.join(
-                source_loc, 'vic-metdata_{0}percentile_{1}_{2}.nc'.format(
-                    var, agg, date)), os.path.join(
-                dest_loc, 'vic-metdata_{0}percentile_{1}_{2}{3}.nc'.format(
-                    var, agg, month, str(1))))
     sftp.put(
         os.path.join(
-            source_loc, 'vic-metdata_{0}percentile_{1}_{2}.nc'.format(
-                var, agg, date)), os.path.join(
-            dest_loc, 'vic-metdata_{0}percentile_{1}.nc'.format(
-                var, agg)))
+            source_loc, 'vic-metdata_ropercentile_%s_%s.nc' %
+            (agg, date)), os.path.join(
+            dest_loc, 'vic-metdata_ropercentile_%s.nc' %
+            (agg)))
     print(os.path.join(
-            source_loc, 'vic-metdata_{0}percentile_{1}_{2}.nc'.format(
-               var, agg, date)))
-
+            source_loc, 'vic-metdata_ropercentile_%s_%s.nc' %
+            (agg, date)))
 # create a .txt file to include the date
 f = sftp.open(os.path.join(dest_loc, 'lastDate.txt'), 'w+')
 f.write('%s/%s/%s' % (date[:4], date[5:7], date[8:10]))
 f.close()
-print(os.path.join(dest_loc, 'lastDate.txt'))
 
 sftp.close()
 ssh.close()
