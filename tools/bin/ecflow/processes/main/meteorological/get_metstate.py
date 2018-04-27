@@ -36,14 +36,14 @@ units_out = cf_units.Unit('degC')
 cdo = Cdo()
 
 # read in meteorological data location
-met_state = config_dict['SUBDAILY']['Met_State_File']
+met_state = config_dict['MONITOR']['Met_State_File']
 
 # read in grid_file from config file
-grid_file = config_dict['SUBDAILY']['GridFile']
+grid_file = config_dict['DOMAIN']['GridFile']
 
 # get dates to process
 state_end_date = datetime.strptime(
-    config_dict['SUBDAILY']['Subd_Met_Start_Date'], '%Y-%m-%d') - timedelta(
+    config_dict['MONITOR']['Start_Date'], '%Y-%m-%d') - timedelta(
         days=1) 
 state_end_date_format = state_end_date.strftime('%Y-%m-%d') 
 state_end_date = datetime.strptime(state_end_date_format, '%Y-%m-%d')

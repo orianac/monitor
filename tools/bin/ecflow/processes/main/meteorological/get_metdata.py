@@ -128,10 +128,10 @@ def main():
     old_config_file = config_dict['ECFLOW']['old_Config']
     new_config_file = config_dict['ECFLOW']['new_Config']
     n_days = int(config_dict['ECFLOW']['Met_Delay'])
-    met_out = config_dict['ECFLOW']['Orig_Met']
+    met_out = config_dict['MONITOR']['Orig_Met']
 
     # read in grid_file from config file
-    grid_file = config_dict['SUBDAILY']['GridFile']
+    grid_file = config_dict['DOMAIN']['GridFile']
 
     # get current date and number of days
     # define the end date for subdaily generation and the vic run
@@ -169,9 +169,15 @@ def main():
 
     # check if data we are downloading coms from multiple years
     # replace start date, end date and met location in the configuration file
-    kwargs = {'SUBD_MET_START_DATE': vic_start_date_format,
-              'END_DATE': end_date_format, 'VIC_START_DATE': vic_start_date_format,
+    kwargs = {'START_DATE': vic_start_date_format,
+              'END_DATE': end_date_format,
               'VIC_SAVE_STATE': vic_save_state_format,
+              'MED_START_DATE': '-9999',
+              'MED_END_DATE': '-9999',
+              'MED_VIC_SAVE_STATE': '-9999',
+              'SEAS_START_DATE': '-9999',
+              'SEAS_END_DATE': '-9999',
+              'SEAS_VIC_SAVE_STATE': '-9999',
               'FULL_YEAR': 'Year'}
     model_tools.replace_var_pythonic_config(old_config_file, new_config_file,
                                             header=None, **kwargs)
