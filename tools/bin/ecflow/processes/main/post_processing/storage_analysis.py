@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import numpy as np
 import xarray as xr
 import pandas as pd
@@ -49,21 +50,20 @@ def return_category(percentile):
         category = -9999
     return category
 
+
 def main():
     parser = argparse.ArgumentParser(description='Calculate runoff percentiles')
     parser.add_argument('config_file', metavar='config_file',
-                         help='the python configuration file, see template:' +
+                         help='the python configuration file, see template:'
                          ' /monitor/config/python_template.cfg')
-    parser.add_argument('time_horizon_type', help='MONITOR, MED_FCST, or ' +
-                        'SEAS_FCST. Should correspond to section header in ' +
+    parser.add_argument('time_horizon_type', help='MONITOR, MED_FCST, or '
+                        'SEAS_FCST. Should correspond to section header in '
                         'config_file')
     args = parser.parse_args()
     config_dict = read_config(args.config_file)
     section = args.time_horizon_type
 
     analysis_date = config_dict[section]['End_Date']
-    baseline_start = config_dict['PERCENTILES']['baseline_start_date']
-    baseline_end = config_dict['PERCENTILES']['baseline_end_date']
     if section == 'MONITOR':
         infile = os.path.join(
             config_dict[section]['OutputDirRoot'], 'fluxes.{}.nc'.format(
@@ -74,27 +74,36 @@ def main():
                 config_dict[section]['Start_Date']))
     print('open {}'.format(infile))
     curr_xds = xr.open_dataset(infile)
+    # TODO: determine Oct1 flux file name in script instead of as input
+    oct1_ds = xr.open_dataset(config_dict[section]['Oct1_flux_file'])
     print('open {}'.format(config_dict['PERCENTILES']['historic_VIC_out']))
     hist_xds = xr.open_dataset(config_dict['PERCENTILES']['historic_VIC_out'],
                                chunks={'lat': 100, 'lon': 100})
-    print('sliced data sets by time')
-    hist_xds = hist_xds.loc[dict(time=slice(baseline_start, baseline_end))]
-    today_xds = curr_xds.loc[dict(time=analysis_date)]
-    day = int(today_xds.time.dt.dayofyear)
-    title = {'swe': 'SWE', 'sm': 'Total column soil moisture', 'tm': 'Total moisture storage'}
     # extract variables
     print('get the variables we actually want')
     curr_vals = {}
-    hist_vals = {}
-    for xds, val_dict in zip([today_xds, hist_xds], [curr_vals, hist_vals]):
-        val_dict['swe'] = xds['OUT_SWE']
-        val_dict['sm'] = xds['OUT_SOIL_MOIST'].sum(dim='nlayer', skipna=False)
-        val_dict['tm'] = val_dict['swe'] + val_dict['sm']
-
+    today_xds = curr_xds.loc[dict(time=analysis_date)]
+    day = int(today_xds.time.dt.dayofyear)
+    title = {'swe': 'SWE', 'sm': 'Total column soil moisture',
+             'tm': 'Total moisture storage'}
+    # remove Oct. 1 SWE at start of water year to correct for perennial SWE
+    date_unformat = datetime.strptime(analysis_date, '%Y-%m-%d') 
+    if date_unformat.month >= 10:
+        oct_yr = date_unformat.year
+    else:
+        oct_yr = date_unformat.year - 1
+    # extract variables
+    print('get the variables we actually want')
+    curr_vals['swe'] = (today_xds['OUT_SWE'] -
+                        oct1_ds['OUT_SWE'].loc[dict(time='{}-10-01'.format(
+        oct_yr))].values)
+    curr_vals['sm'] = today_xds['OUT_SOIL_MOIST'].sum(dim='nlayer',
+                                                      skipna=False)
+    curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
+    hist_xds = hist_xds.where(
+            (hist_xds['time'].dt.dayofyear >= day - 2) &
+            (hist_xds['time'].dt.dayofyear <= day + 2))
     for var in ['swe', 'sm', 'tm']:
-        hist_vals[var] = hist_vals[var].where(
-            (hist_vals[var]['time'].dt.dayofyear >= day - 2) &
-            (hist_vals[var]['time'].dt.dayofyear <= day + 2))
         print('allocate percentiles memory for {}'.format(var))
         pname = '{}percentile'.format(var)
         percentiles = xr.Dataset({pname:
@@ -107,22 +116,22 @@ def main():
                                           'lat': curr_vals[var].lat})
         print('calculate percentiles for {}'.format(var))
         percentiles[pname] = xr.apply_ufunc(
-            run_percentileofscore, hist_vals[var], curr_vals[var], kwargs={'var': var},
-            input_core_dims=[['time'], []], dask='parallelized',
-            output_dtypes=[float], vectorize=True)
+            run_percentileofscore, hist_xds[var], curr_vals[var],
+            kwargs={'var': var}, input_core_dims=[['time'], []],
+            dask='parallelized', output_dtypes=[float], vectorize=True)
         print('calculate category for {}'.format(var))
         percentiles['category'] = xr.apply_ufunc(return_category,
                                                  percentiles[pname],
                                                  dask='parallelized',
-                                                 output_dtypes=[int],
+                                                 output_dtypes=[float],
                                                  vectorize=True)
         print('add attributes')
-        percentiles[pname].attrs['_FillValue'] = -9999
-        percentiles['category'].attrs['_FillValue'] = -9999
+        percentiles[pname].attrs['_FillValue'] = -9999.
+        percentiles['category'].attrs['_FillValue'] = -9999.
         percentiles.attrs['analysis_date'] = analysis_date
         percentiles.attrs['title'] = '{} percentiles'.format(title[var])
-        percentiles.attrs['comment'] = ('Calculated from output from the' +
-                                        ' Variable Infiltration ' +
+        percentiles.attrs['comment'] = ('Calculated from output from the'
+                                        ' Variable Infiltration '
                                         'Capacity (VIC) Macroscale Hydrologic'
                                         ' Model')
         for attr in ['VIC_Model_Version', 'VIC_Driver',
@@ -134,6 +143,7 @@ def main():
             'vic-metdata_{0}_{1}.nc'.format(pname, analysis_date))
         percentiles.to_netcdf(outfile)
         print('{} saved'.format(outfile))
+
 
 if __name__ == "__main__":
     main()
