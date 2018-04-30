@@ -1,4 +1,4 @@
-%include <qsub.h>
+%include <qsub_build.h>
 %include <head.h>
 %manual
 Run get_metdata.py.
@@ -6,6 +6,10 @@ Copies a new configuration file in order to replace the start
 and end date.
 Outputs are saved in the Met_Loc defined in config file.
 %end
+
+source activate ncdata 
+
+export CDO="/civil/hydro/toolbox/miniconda2/envs/ncdata/bin/cdo"
 
 echo "Today is $(date)"
 
