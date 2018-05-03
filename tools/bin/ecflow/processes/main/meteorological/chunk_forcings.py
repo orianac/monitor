@@ -18,21 +18,20 @@ def save_metsim_by_year(metsim_config_file):
     config_dict = read_config(metsim_config_file)
     out_dir = config_dict['MetSim']['out_dir']
     out_prefix = config_dict['MetSim']['out_prefix']
-    start = config_dict['MetSim']['start'].replace('/','')
-    stop = config_dict['MetSim']['stop'].replace('/','')
+    start = config_dict['MetSim']['start'].replace('/', '')
+    stop = config_dict['MetSim']['stop'].replace('/', '')
     in_file = os.path.join(out_dir, '{0}_{1}-{2}.nc'.format(out_prefix,
-                                                          start, stop))
+                                                            start, stop))
     # read data and save by year
-    if os.path.exists(in_file):
-        xds =xr.open_dataset(in_file)
-        for year in np.unique(xds.time.dt.year):
-            out_file = os.path.join(out_dir, '{0}_{1}-{2}.{3}.nc'.format(
-                out_prefix, start, stop, year))
-            xds.sel(time=str(year)).to_netcdf(out_file)
-    else:
-        print('ERROR: {} does not exist!'.format(in_file))
-        sys.exit(1)
-    # TODO: delete in_file after writing out_file
+    try:
+        xds = xr.open_dataset(in_file)
+    except OSError:
+        raise OSError('ERROR: {} probably does not exist!'.format(in_file))
+    for year in np.unique(xds.time.dt.year):
+        out_file = os.path.join(out_dir, '{0}_{1}-{2}.{3}.nc'.format(
+            out_prefix, start, stop, year))
+        xds.sel(time=str(year)).to_netcdf(out_file)
+    # delete in_file after writing out_file
     if os.path.exists(in_file) and os.path.exists(out_file):
         os.remove(in_file)
 
