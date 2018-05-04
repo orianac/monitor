@@ -4,7 +4,7 @@ Monitor
 designed to be run through the work flow package ecFlow.
 
 ## Overview:
-Monitor has four main components.
+Monitor has three main components.
 
 **Meteorological**  `/monitor/tools/bin/ecflow/processes/main/meteorological/`
 	Contains scripts for the manipulation of meteorological data, 
