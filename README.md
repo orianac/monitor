@@ -17,10 +17,6 @@ uses the model `VIC`.
 **Post-Processing**  `/monitor/tools/bin/ecflow/processes/main/post_processing/`
 	Contains scripts to analyze the model output. 
 
-**CDF Creator**  `/monitor/tools/cdf_creator/`
-	Contains scripts to extract cdfs for every day of the year from 
-historic model runs. The cdfs are used during `post_processing`.
-
 ## Requirements:  
 - python 2.7 (ecflow dependency)
 - numpy
@@ -35,3 +31,8 @@ historic model runs. The cdfs are used during `post_processing`.
 - datetime
 - os
 - argparse
+- cdo
+- python-cdo
+- nco
+- pynco
+- dask
