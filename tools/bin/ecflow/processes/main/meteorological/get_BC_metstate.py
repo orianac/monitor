@@ -32,7 +32,7 @@ def main():
     units_in = cf_units.Unit('K')
     units_out = cf_units.Unit('degC')
 
-    # initial cdo
+    # initialize cdo
     cdo = Cdo()
 
     # read in meteorological data location
@@ -123,6 +123,9 @@ def main():
     tmin = np.copy(merge_ds['tmmn'].values)
     tmax = np.copy(merge_ds['tmmx'].values)
     swap_values = ((tmin > tmax) & (tmax != -32767.))
+    nswap = np.sum(swap_values)
+    if nswap > 0:
+        print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
     merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
     merge_ds['tmmn'].attrs['units'] = 'degC'

@@ -239,6 +239,9 @@ merge_ds.rename({'day': 'time', 'tmmn': 't_min', 'tmmx': 't_max',
 tmin = np.copy(merge_ds['t_min'].values)
 tmax = np.copy(merge_ds['t_max'].values)
 swap_values = ((tmin > tmax) & (tmax != -32767.))
+nswap = np.sum(swap_values)
+if nswap > 0:
+    print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
 merge_ds['t_min'].values[swap_values] = tmax[swap_values]
 merge_ds['t_max'].values[swap_values] = tmin[swap_values]
 
