@@ -8,7 +8,7 @@ Runs VIC 5 using image driver.
 %end
 
 echo "Today is $(date)"
-source activate monitor_py3
+source activate %ENVIRON%
 
 python %ECF_HOME%/processes/main/models/prep_and_run_vic.py %WORKING_CFG_FILE% SEAS_FCST
 
