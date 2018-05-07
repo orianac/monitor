@@ -5,21 +5,21 @@
 Creates netCDFs with percentiles for soil moisture, swe, 
 and soil moisture + swe (total moisture). 
 Transfers the netCDFs to the NKN network. 
+NC_ENVIRON is a conda environment with working cdo and nco tools and bindings.
+ENVIRON is the primary conda environment. They can be the same environment.
 %end
 
-echo "Today is $(date)"
-
-source activate ncdata
-export CDO=/civil/hydro/toolbox/miniconda2/envs/ncdata/bin/cdo
+source activate %NC_ENVIRON%
+export CDO="%NC_ENVIRON%/bin/cdo"
 python %ECF_HOME%/processes/main/post_processing/merge_fluxes.py %WORKING_CFG_FILE% MONITOR
 
-source activate monitor_py3
+source activate %ENVIRON%
 python %ECF_HOME%/processes/main/post_processing/storage_analysis.py %WORKING_CFG_FILE% MONITOR
 
 python %ECF_HOME%/processes/main/post_processing/ro_analysis.py %WORKING_CFG_FILE% MONITOR
 
-source activate ncdata
-export CDO="/civil/hydro/toolbox/miniconda2/envs/ncdata/bin/cdo" 
+source activate %NC_ENVIRON%
+export CDO="%NC_ENVIRON%/bin/cdo"
 python %ECF_HOME%/processes/main/post_processing/merge_percentiles.py %WORKING_CFG_FILE% MONITOR
 
 %include <tail.h>

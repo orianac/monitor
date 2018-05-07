@@ -7,6 +7,7 @@ and soil moisture + swe (total moisture).
 Transfers the netCDFs to the NKN network. 
 %end
 
+source activate %ENVIRON%
 echo "Today is $(date)"
 
 python %ECF_HOME%/processes/main/post_processing/merged_file_transfer.py %WORKING_CFG_FILE% MONITOR
