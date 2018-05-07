@@ -13,7 +13,7 @@ import os
 import argparse
 from datetime import datetime, timedelta
 import numpy as np
-import pandas as pd
+import netCDF4
 import xarray as xr
 from cdo import Cdo
 import cf_units
@@ -54,12 +54,10 @@ def recreate_attrs(met_ds):
     # longitude attributes
     met_ds.lon.attrs['units'] = "degrees_east"
     met_ds.lon.attrs['description'] = "longitude"
-
     # time attributes
     met_ds.time.attrs['units'] = "days since 1900-01-01 00:00:00"
     met_ds.time.attrs['calendar'] = "gregorian"
     met_ds.time.attrs['description'] = "days since 1900-01-01"
-
     # parameter attributes
     # precipitation
     met_ds.precipitation_amount.attrs['units'] = "mm"
@@ -75,23 +73,19 @@ def recreate_attrs(met_ds):
     for var in ['tmmn', 'tmmx']:
         met_ds[var].attrs['units'] = "degC"
         met_ds[var].attrs['height'] = "2 m"
-
     # wind speed
     met_ds.wind_speed.attrs['units'] = "m/s"
     met_ds.wind_speed.attrs['description'] = "Daily Mean Wind Speed"
     met_ds.wind_speed.attrs['height'] = "10 m"
-
     # shortwave radiation
     met_ds.surface_downwelling_shortwave_flux_in_air.attrs['units'] = "W m-2"
     met_ds.surface_downwelling_shortwave_flux_in_air.attrs['description'] = (
         'Daily Mean Downward Shortwave Radiation At Surface')
-
     # specific humidity
     met_ds.specific_humidity.attrs['units'] = "kg/kg"
     met_ds.specific_humidity.attrs['description'] = "Daily Mean Specific " + \
         "Humidity"
     met_ds.specific_humidity.attrs['height'] = "2 m"
-
     return met_ds
 
 
@@ -169,8 +163,8 @@ def main():
         swap_values = ((tmin > tmax) & (tmax != -32767.))
         merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
         merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
-
-        end_date = pd.to_datetime(merge_ds.time.values[-1])
+        time = merge_ds['time']
+        end_date = netCDF4.num2date(time[-1], time.units, time.calendar)
         start_date = datetime.strptime(config_dict['MONITOR']['End_Date'],
                                        '%Y-%m-%d') + timedelta(days=1)
         start_date_format = start_date.strftime('%Y-%m-%d')
