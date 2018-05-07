@@ -80,7 +80,7 @@ def main():
 
     # mpirun -np 16 vic_image.exe -g global_file
     subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
-                    config_dict['ECFLOW']['Cores'],
+                    str(config_dict['ECFLOW']['Cores']),
                     config_dict['ECFLOW']['Executable'], '-g',
                     global_file_path])
 
@@ -110,7 +110,7 @@ def main():
 
     # mpirun -np 16 vic_image.exe -g global_file
     subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
-                    config_dict['ECFLOW']['Cores'],
+                    str(config_dict['ECFLOW']['Cores']),
                     config_dict['ECFLOW']['Executable'], '-g',
                     global_file_path])
 
