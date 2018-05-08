@@ -32,12 +32,12 @@ def main():
     units_in = cf_units.Unit('K')
     units_out = cf_units.Unit('degC')
 
-    # initial cdo
+    # initialize cdo
     cdo = Cdo()
 
     # read in meteorological data location
     met_out = config_dict['MONITOR']['Met_State_File']
- 
+
     # read in the source and destination paths and current date
     source_loc = config_dict['MONITOR']['BC_Met_Source']
     dest_loc = os.path.dirname(met_out)
@@ -63,7 +63,7 @@ def main():
         num_endofyear = 365
     else:
         num_endofyear = 364
-    
+
     # an abbreviation and a full name is needed
     varnames = [('pr', 'precipitation_amount'), ('tmmn', 'air_temperature'),
                 ('tmmx', 'air_temperature'), ('vs', 'wind_speed'),
@@ -84,7 +84,7 @@ def main():
             source_file = os.path.join(source_loc, '{0}_BC_{1}.nc'.format(
                 var[0], year))
             local_file = os.path.join(dest_loc, '{0}_{1}.nc'.format(
-                var[0], year)) 
+                var[0], year))
             sftp.get(source_file, local_file)
     sftp.close()
     ssh.close()
@@ -123,6 +123,9 @@ def main():
     tmin = np.copy(merge_ds['tmmn'].values)
     tmax = np.copy(merge_ds['tmmx'].values)
     swap_values = ((tmin > tmax) & (tmax != -32767.))
+    nswap = np.sum(swap_values)
+    if nswap > 0:
+        print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
     merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
     merge_ds['tmmn'].attrs['units'] = 'degC'

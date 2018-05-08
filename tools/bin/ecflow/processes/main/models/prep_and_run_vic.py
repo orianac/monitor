@@ -32,18 +32,15 @@ def main():
     # read in the desired variables from the config file
     global_template = config_dict['DOMAIN']['GlobalFileTemplate']
     global_file_path = config_dict[section]['GlobalFilePath']
-    state_path = config_dict[section]['StatePath']
-    in_state_path = config_dict[section]['InStatePath']
-    result_path = config_dict[section]['OutputDirRoot']
-    forc_path = config_dict[section]['Subd_Out_Dir']
     # get important dates
     vic_start_date = config_dict[section]['Start_Date']
     vic_end_date = config_dict[section]['End_Date']
     vic_save_state = config_dict[section]['vic_save_state']
 
     forcing_prefix = os.path.join(
-        forc_path, 'forcing_{0}-{1}.'.format(vic_start_date.replace('-', ''),
-                                             vic_end_date.replace('-', '')))
+        config_dict[section]['Subd_Out_Dir'],
+        'forcing_{0}-{1}.'.format(vic_start_date.replace('-', ''),
+                                  vic_end_date.replace('-', '')))
 
     # parse out year, month, and day from the model dates, which have
     # the form YYYY-MM-DD
@@ -52,8 +49,10 @@ def main():
     save_state = parse(vic_save_state)
 
     # generate the path to the initial state file
-    in_state = os.path.join(in_state_path, 'state.%s%s%s_00000.nc' % (
-        vic_start_date[:4], vic_start_date[5:7], vic_start_date[8:10]))
+    in_state = os.path.join(config_dict[section]['InStatePath'],
+                            'state.%s%s%s_00000.nc' % (
+                                vic_start_date[:4], vic_start_date[5:7],
+                                vic_start_date[8:10]))
 
     kwargs = {
         'Start_Year': start.year,
@@ -66,8 +65,8 @@ def main():
         'State_Month': save_state.month,
         'State_Day': save_state.day,
         'In_State': in_state,
-        'State_Path': state_path,
-        'Result_Path': result_path,
+        'State_Path': config_dict[section]['StatePath'],
+        'Result_Path': config_dict[section]['OutputDirRoot'],
         'Forcing_Prefix': forcing_prefix}
 
     model_tools.replace_var_pythonic_config(

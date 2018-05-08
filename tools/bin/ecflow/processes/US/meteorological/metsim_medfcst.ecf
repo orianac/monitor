@@ -7,7 +7,7 @@ Updates MetSim configuration file and runs MetSim to disaggregate forcings
 
 echo "Today is $(date)"
 
-source activate monitor_py3
+source activate %ENVIRON%
 python %ECF_HOME%/processes/main/meteorological/run_metsim_metgrid.py %WORKING_CFG_FILE% MED_FCST
 
 %include <tail.h>

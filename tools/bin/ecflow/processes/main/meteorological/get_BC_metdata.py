@@ -33,7 +33,7 @@ def main():
     units_in = cf_units.Unit('K')
     units_out = cf_units.Unit('degC')
 
-    # initial cdo
+    # initialize cdo
     cdo = Cdo()
 
     # read in meteorological data location
@@ -41,7 +41,7 @@ def main():
     new_config_file = config_dict['ECFLOW']['new_Config']
     n_days = int(config_dict['ECFLOW']['Met_Delay'])
     met_out = config_dict['MONITOR']['Orig_Met']
- 
+
     # read in the source and destination paths and current date
     source_loc = config_dict['MONITOR']['BC_Met_Source']
     dest_loc = os.path.dirname(met_out)
@@ -64,7 +64,7 @@ def main():
     vic_save_state_format = vic_save_state.strftime('%Y-%m-%d')
 
 
-    # check if data we are downloading coms from multiple years
+    # check if data we are downloading comes from multiple years
     # replace start date, end date and met location in the configuration file
     kwargs = {'START_DATE': start_date_format,
               'END_DATE': end_date_format,
@@ -90,7 +90,7 @@ def main():
             source_file = os.path.join(source_loc, '{0}_BC_{1}.nc'.format(
                 var[0], year))
             local_file = os.path.join(dest_loc, '{0}_{1}.nc'.format(
-                var[0], year)) 
+                var[0], year))
             sftp.get(source_file, local_file)
     sftp.close()
     ssh.close()
@@ -130,6 +130,9 @@ def main():
     tmin = np.copy(merge_ds['tmmn'].values)
     tmax = np.copy(merge_ds['tmmx'].values)
     swap_values = ((tmin > tmax) & (tmax != -32767.))
+    nswap = np.sum(swap_values)
+    if nswap > 0:
+        print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
     merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
     merge_ds['tmmn'].attrs['units'] = 'degC'
