@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 prep_and_run_vic.py
-usage: <python> <prep_and_run_vic.py> <configuration.cfg> <time_horizon_type>
+usage: <python> <prep_and_run_vic.py> <configuration.cfg> <time_horizon>
 
 This script creates a global file from the template with the correct
  model start and end dates.
@@ -16,8 +16,10 @@ from monitor import model_tools
 
 
 def main():
-    ''' Make a VIC global file with correct model dates and run VIC '''
-    parser = argparse.ArgumentParser(description='Reorder dimensions')
+    ''' Prepare global file from template and run VIC. Uses mpirun
+        and executable defined in configuration file '''
+    # read in configuration file
+    parser = argparse.ArgumentParser(description='Run VIC')
     parser.add_argument('config_file', metavar='config_file',
                         help='configuration file')
     parser.add_argument('time_horizon_type', help='MONITOR, MED_FCST, or ' +
@@ -67,14 +69,15 @@ def main():
         'Result_Path': config_dict[section]['OutputDirRoot'],
         'Forcing_Prefix': forcing_prefix}
 
-
     model_tools.replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
-    subprocess.run(['mpirun', '-np', config_dict['ECFLOW']['Ncores'],
+    # mpirun -np 16 vic_image.exe -g global_file
+    subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
+                    str(config_dict['ECFLOW']['Cores']),
                     config_dict['ECFLOW']['Executable'], '-g',
                     global_file_path])
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

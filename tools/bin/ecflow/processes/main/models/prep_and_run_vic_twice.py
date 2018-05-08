@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-create_global_file.py
-usage: <python> <create_global_file.py> <configuration.cfg>
+prep_and_run_vic_twice.py
+usage: <python> <prep_and_run_vic_twice.py> <configuration.cfg> MONITOR
 
 This script creates a global file from the template with the correct
  model start and end dates.
@@ -77,9 +77,11 @@ def main():
     model_tools.replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
-    subprocess.run(['mpirun', '-np', config_dict['ECFLOW']['Ncores'],
-                    config_dict['ECFLOW']['Executable'],
-                    '-g', global_file_path])
+    # mpirun -np 16 vic_image.exe -g global_file
+    subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
+                    str(config_dict['ECFLOW']['Cores']),
+                    config_dict['ECFLOW']['Executable'], '-g',
+                    global_file_path])
 
     # generate the path to the initial state file
     in_state = os.path.join(config_dict[section]['StatePath'],
@@ -106,9 +108,12 @@ def main():
     model_tools.replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
-    subprocess.run([config_dict['ECFLOW']['Executable'], '-g',
+    # mpirun -np 16 vic_image.exe -g global_file
+    subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
+                    str(config_dict['ECFLOW']['Cores']),
+                    config_dict['ECFLOW']['Executable'], '-g',
                     global_file_path])
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
