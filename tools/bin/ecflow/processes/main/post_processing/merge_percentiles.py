@@ -31,9 +31,12 @@ def main():
                                       'vic-metdata_{}percentile_blankmerge1.nc'.format(var))
         bc_file = os.path.join(bcdir, file_name)
         us_file = os.path.join(usdir, file_name)
-        merge_out = os.path.join(merge_dir, file_name) 
-        temp_out = cdo.mergegrid(input='{0} {1}'.format(merge_template, bc_file))
-        cdo.mergegrid(input='{0} {1}'.format(temp_out, us_file), output=merge_out)
+        merge_out = os.path.join(merge_dir, file_name)
+        temp_out = os.path.join(config_dict['ECFLOW']['TempDir'],file_name)
+        cdo.mergegrid(input='{0} {1}'.format(merge_template, bc_file),
+                      output=temp_out)
+        cdo.mergegrid(input='{0} {1}'.format(temp_out, us_file), output=merge_ou)
+        os.remove(temp_out)
     # merge runoff percentiles
     for agg in ['7d', '15d', '30d', '60d', '90d', 'ccy', 'cwy']:
         file_name = 'vic-metdata_ropercentile_{0}_{1}.nc'.format(agg, date)
@@ -42,9 +45,12 @@ def main():
         bc_file = os.path.join(bcdir, file_name)
         us_file = os.path.join(usdir, file_name)
         merge_out = os.path.join(merge_dir, file_name)
-        temp_out = cdo.mergegrid(input='{0} {1}'.format(merge_template, bc_file))
-        cdo.mergegrid(input='{0} {1}'.format(temp_out, us_file), output=merge_out)
-
+        temp_out = os.path.join(config_dict['ECFLOW']['TempDir'], filename)
+        cdo.mergegrid(input='{0} {1}'.format(merge_template, bc_file),
+                      output=temp_out)
+        cdo.mergegrid(input='{0} {1}'.format(temp_out, us_file),
+                      output=merge_out)
+        os.remove(temp_out)
 
 if __name__ == "__main__":
     main()

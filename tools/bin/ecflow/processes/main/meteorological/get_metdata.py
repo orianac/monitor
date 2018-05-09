@@ -6,6 +6,7 @@ This script downloads meteorological data through xarray from
 http://thredds.northwestknowledge.net:8080/thredds/reacch_climate_MET_catalog.html
 delivered through OPeNDAP.
 '''
+import os
 import argparse
 import calendar
 from datetime import datetime, timedelta
@@ -38,8 +39,9 @@ def recreate_attrs(met_ds):
     for var in met_ds.variables:
         met_ds[var].attrs['_FillValue'] = -32767.
         met_ds[var].attrs['esri_pe_string'] = esri_str
-        met_ds[var].attrs['coordinates'] = 'lon lat'
-        met_ds[var].attrs['missing_value'] = -32767.
+        if (var != 'lon') & (var != 'lat'):
+            met_ds[var].attrs['coordinates'] = 'lon lat'
+            met_ds[var].attrs['missing_value'] = -32767.
     # global attributes
     met_ds.attrs['author'] = ('John Abatzoglou - University of ' +
                               'Idaho, jabatzoglou@uidaho.edu')
@@ -239,9 +241,12 @@ def main():
         print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
     merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
-
+    temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_out')
+    merge_ds.to_netcdf(temporary)
+    print('writing out to {0} mapped to {1}'.format(met_out, grid_file))
     # conservatively remap to grid file
-    cdo.remapcon(grid_file, input=merge_ds, output=met_out)
+    cdo.remapcon(grid_file, input=temporary, output=met_out)
+    os.remove(temporary)
 
 
 if __name__ == "__main__":

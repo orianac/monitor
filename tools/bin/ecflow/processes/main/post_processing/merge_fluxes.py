@@ -44,7 +44,10 @@ def main():
         vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(start_date_format))
         if os.path.isfile(merged) and os.path.isfile(vic_out):
             print('at 2')
-            tmpout = cdo.mergetime(input='{0} {1}'.format(vic_out, merged))
+            tmpout = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                  'merge{}.nc'.format(start_date.year))
+            cdo.mergetime(input='{0} {1}'.format(vic_out, merged),
+                          output=tmpout)
             # if MONITOR, VIC is run twice to save state 60 days prior to
             # current day for
             # initializing tomorrow's run, so there are 2 output file. By
@@ -52,8 +55,10 @@ def main():
             # file will not overlap with the first file
             if section == 'MONITOR':
                 print('at 3')
-                vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(vic_save_state_format))
-                cdo.mergetime(input='{0} {1}'.format(vic_out, tmpout), output=merged)
+                vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(
+                                           vic_save_state_format))
+                cdo.mergetime(input='{0} {1}'.format(vic_out, tmpout),
+                              output=merged)
     else:
         print('at 5')
         vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(start_date_format))
@@ -65,9 +70,15 @@ def main():
             merged = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
             if os.path.isfile(merged) and os.path.isfile(vic_out):
                 print('at 8')
-                tmp1 = cdo.seltime(year, input=vic_out)
-                tmpout = cdo.mergetime(input='{0} {1}'.format(tmp1, merged))
+                tmp1 = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                    'temp_select{}.nc'.format(year))
+                cdo.seltime(year, input=vic_out, output=tmp1)
+                tmpout = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                      'temp_merge{}.nc'.format(year))
+                cdo.mergetime(input='{0} {1}'.format(tmp1, merged),
+                              output=tmpout)
                 os.rename(tmpout, merged)
+                os.remove(tmp1)
         # second file starts at vic_save_state
         vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(vic_save_state_format))
         for year in range(vic_save_state.year, end_date.year + 1):
@@ -75,9 +86,15 @@ def main():
             # merge data into file from same year
             merged = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
             if os.path.isfile(merged) and os.path.isfile(vic_out):
-                tmp1 = cdo.seltime(year, input=vic_out)
-                tmpout = cdo.mergetime(input='{0} {1}'.format(tmp1, merged))
+                tmp1 = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                    'temp_select{}.nc'.format(year))
+                cdo.seltime(year, input=vic_out, output=tmp1)
+                tmpout = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                      'temp_merge{}.nc'.format(year))
+                cdo.mergetime(input='{0} {1}'.format(tmp1, merged),
+                              output=tmpout)
                 os.rename(tmpout, merged)
+                os.remove(tmp1)
 
 
 if __name__ == "__main__":

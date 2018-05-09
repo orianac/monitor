@@ -44,8 +44,8 @@ grid_file = config_dict['DOMAIN']['GridFile']
 # get dates to process
 state_end_date = datetime.strptime(
     config_dict['MONITOR']['Start_Date'], '%Y-%m-%d') - timedelta(
-        days=1) 
-state_end_date_format = state_end_date.strftime('%Y-%m-%d') 
+        days=1)
+state_end_date_format = state_end_date.strftime('%Y-%m-%d')
 state_end_date = datetime.strptime(state_end_date_format, '%Y-%m-%d')
 state_end_year = state_end_date.strftime('%Y')
 state_end_day_num = state_end_date.timetuple().tm_yday - 1  # python 0 start correction
@@ -193,7 +193,7 @@ if state_start_year != state_end_year:
         # place data in dict, the variable abbreviation is used as key
         met_dsets[var[0]] = ds
 
-else:  # if we have data from the same year, can download from same file. 
+else:  # if we have data from the same year, can download from same file.
     # download metdata from http://thredds.northwestknowledge.net
     met_dsets = dict()
     for var in varnames:
@@ -244,7 +244,9 @@ if nswap > 0:
     print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
 merge_ds['t_min'].values[swap_values] = tmax[swap_values]
 merge_ds['t_max'].values[swap_values] = tmin[swap_values]
-
-print('Conservatively remap and write to {0}'.format(met_state))
-cdo.remapcon(grid_file, input=merge_ds, output=met_state)
-
+temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_state')
+merge_ds.to_netcdf(temporary)
+print('writing out to {0} mapped to {1}'.format(met_state, grid_file))
+# conservatively remap to grid file
+cdo.remapcon(grid_file, input=temporary, output=met_state)
+os.remove(temporary)
