@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""
+'''
 get_seasonal_metfcst.py
 usage: <python> <get_seasonal_metfcst.py> <configuration.cfg>
 This script downloads downscaled NMME meteorological forecast data through
@@ -9,7 +9,7 @@ http://proxy.nkn.uidaho.edu/thredds/catalog/
     catalog.html
 delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in. To start, we just download multi-model ensemble mean.
-"""
+'''
 import os
 import argparse
 from datetime import datetime, timedelta
@@ -98,6 +98,8 @@ def main():
                 'pr', 'pet']
     # define model names for file name
     modelnames = ['ENSMEAN']
+    # ENSMEAN is used for initial testing/workflow. Eventually, we'll
+    # want to add the rest in. The available ensemble members are:
     # ['NCAR', 'NASA', 'GFDL', 'GFDL-FLOR', 'ENSMEAN', 'CMC1', 'CMC2',
     #              'CFSv2']
     # download metdata from http://thredds.northwestknowledge.net
