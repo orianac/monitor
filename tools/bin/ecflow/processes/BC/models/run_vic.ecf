@@ -1,0 +1,13 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Runs VIC 5 using image driver.
+%end
+
+echo "Today is $(date)"
+source activate %ENVIRON%
+
+python %ECF_HOME%/processes/main/models/prep_and_run_vic_twice.py %WORKING_CFG_FILE% MONITOR
+
+%include <tail.h>

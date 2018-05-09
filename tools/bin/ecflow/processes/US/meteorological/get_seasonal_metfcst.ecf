@@ -1,0 +1,17 @@
+%include <qsub_build.h>
+%include <head.h>
+%manual
+Run get_seasonal_metfcst.py.
+Outputs are saved in the SeasFcst_Met_Loc defined in config file.
+Only run if a new state file needs to be created. Otherwise, use existing state.
+%end
+
+
+echo "Today is $(date)"
+source activate ncdata 
+
+export CDO="/civil/hydro/toolbox/miniconda2/envs/ncdata/bin/cdo"
+python %ECF_HOME%/processes/main/meteorological/get_seasonal_metfcst.py %WORKING_CFG_FILE%
+
+
+%include <tail.h>

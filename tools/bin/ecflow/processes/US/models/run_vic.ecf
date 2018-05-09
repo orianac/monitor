@@ -1,0 +1,17 @@
+#!/bin/bash
+%include <qsub.h>
+%include <head.h>
+%manual
+Runs VIC 5 using image driver.
+For MONITOR, we want to run VIC twice, first to save the state at
+60 days prior to today in order to start from the period during which
+gridMet is no longer considered preliminary, and second to save the
+state today for use in initializing hydrologic forecasts.
+%end
+
+echo "Today is $(date)"
+source activate %ENVIRON% 
+
+python %ECF_HOME%/processes/main/models/prep_and_run_vic_twice.py %WORKING_CFG_FILE% MONITOR
+
+%include <tail.h>
