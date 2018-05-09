@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""
+'''
 get_med_metfcst.py
 usage: <python> <get_med_metfcst.py> <configuration.cfg>
 This script downloads downscaled CFSv2 90-day meteorological forecast
@@ -8,7 +8,7 @@ https://tds-proxy.nkn.uidaho.edu/thredds/fileServer/
     NWCSC_INTEGRATED_SCENARIOS_ALL_CLIMATE/bcsd-nmme/cfsv2_metdata_90day/
 delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in. To start, we just download multi-model ensemble mean.
-"""
+'''
 import os
 import argparse
 from datetime import datetime, timedelta
@@ -171,7 +171,9 @@ def main():
         end_date_format = end_date.strftime('%Y-%m-%d')
         vic_save_state_format = (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
         # replace start date, end date and met location in the configuration
-        # file
+        # file. SEAS_* variables will be defined in get_seasonal_metfcst.py.
+        # replace those keywords with dummy variable (-9999) so that
+        # replace_var_pythonic_config() won't fail.
         kwargs = {'START_DATE': config_dict['MONITOR']['Start_Date'],
                   'END_DATE': config_dict['MONITOR']['End_Date'],
                   'VIC_SAVE_STATE': config_dict['MONITOR']['vic_save_state'],

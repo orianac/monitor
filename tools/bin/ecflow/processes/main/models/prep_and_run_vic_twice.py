@@ -77,6 +77,9 @@ def main():
     model_tools.replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
+    # Use subprocess to submit the following command, with
+    # mpirun executable, ncores, and vic executable read from
+    # configuration file:
     # mpirun -np 16 vic_image.exe -g global_file
     subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
                     str(config_dict['ECFLOW']['Cores']),
