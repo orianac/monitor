@@ -22,7 +22,7 @@ def run_percentileofscore(historical, current, var):
         at least 10 mm '''
     xhist = historical[~np.isnan(historical)]
     xhist = xhist[xhist != -9999]
-    if xhist:
+    if xhist.size:
         # apply 10mm threshold to SWE
         if (var == 'swe') and ((xhist.mean() < 10) or (current < 10)):
             return -9999
