@@ -1,8 +1,13 @@
+''' merge_forecasts.py
+    usage: python merge_forecasts.py config_file time_horizon_type
+    Uses cdo.mergetime to combine flux files into one file per year
+    for forecasts. Because runoff percentiles are computed over time
+    windows longer than forecasts, we merge forecasts with fluxes to create
+    an annual forecast file '''
 import os
 import argparse
 from datetime import datetime
 from cdo import Cdo
-
 
 from tonic.io import read_config
 
@@ -36,21 +41,17 @@ def main():
     elif section == 'SEAS_FCST':
         prev_vic_dir = config_dict['MED_FCST']['OutputDirRoot']
     if end_date.year == start_date.year:
-        print('at 1')
         # merge data into file from same year
         merged_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(
             start_date.year))
         merged_in = os.path.join(prev_vic_dir, 'fluxes.{}.nc'.format(
-               start_date.year))
+            start_date.year))
         if os.path.isfile(merged_in) and os.path.isfile(vic_out):
-            print('at 2')
             # keep values from previous sections
             cdo.mergetime(input='{0} {1}'.format(merged_in, vic_out),
                           output=merged_out)
     else:
-        print('at 3')
         for year in range(start_date.year, end_date.year + 1):
-            print('at 4 {}'.format(year))
             # merge data into file from same year
             merged_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
             merged_in = os.path.join(prev_vic_dir, 'fluxes.{}.nc'.format(year))

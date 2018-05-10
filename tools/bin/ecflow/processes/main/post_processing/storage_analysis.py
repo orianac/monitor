@@ -1,29 +1,39 @@
+''' storage_analysis.py
+    usage: python storage_analysis.py config_file time_horizon_type
+    time_horizon_type is MONITOR, MED_FCST, or SEAS_FCST and corresponds
+    to section header in config file
+    This script calculates percentiles for total column soil moisture,
+    snow water equivalent (SWE) and total moisture (soil moisture + SWE)
+    relative to the base period of 1981-2010.
+'''
 import os
 from datetime import datetime
-import numpy as np
-import xarray as xr
-import pandas as pd
 import argparse
+import numpy as np
 from scipy import stats
+import xarray as xr
 
 from tonic.io import read_config
 
 
 def run_percentileofscore(historical, current, var):
-    x = historical[~np.isnan(historical)]
-    x = x[x!=-9999]
-    if len(x > 0):
+    ''' Remove bad data and run stats.percentileofscore(). For SWE,
+        require that the historical mean and current value are both
+        at least 10 mm '''
+    xhist = historical[~np.isnan(historical)]
+    xhist = xhist[xhist != -9999]
+    if xhist:
         # apply 10mm threshold to SWE
-        if (var == 'swe') and ((x.mean() < 10) or (current < 10)):
+        if (var == 'swe') and ((xhist.mean() < 10) or (current < 10)):
             return -9999
-        else:
-            return stats.percentileofscore(
-                historical[~np.isnan(historical)], current)
-    else:
-        return -9999
+        return stats.percentileofscore(
+            historical[~np.isnan(historical)], current)
+    return -9999
 
 
 def return_category(percentile):
+    ''' Assign percentiles to categories to create a non-linear
+        color bar corresponding to to the U.S. Drought Monitor '''
     if 0 <= percentile < 2:
         category = 0
     elif 2 <= percentile < 5:
@@ -52,10 +62,13 @@ def return_category(percentile):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Calculate runoff percentiles')
+    ''' Calculate percentiles for SWE, total moisture (SWE + soil moisture)
+        and soil moisture '''
+    parser = argparse.ArgumentParser(
+        description='Calculate storage percentiles')
     parser.add_argument('config_file', metavar='config_file',
-                         help='the python configuration file, see template:'
-                         ' /monitor/config/python_template.cfg')
+                        help='the python configuration file, see template:'
+                        ' /monitor/config/python_template.cfg')
     parser.add_argument('time_horizon_type', help='MONITOR, MED_FCST, or '
                         'SEAS_FCST. Should correspond to section header in '
                         'config_file')
@@ -87,7 +100,7 @@ def main():
     title = {'swe': 'SWE', 'sm': 'Total column soil moisture',
              'tm': 'Total moisture storage'}
     # remove Oct. 1 SWE at start of water year to correct for perennial SWE
-    date_unformat = datetime.strptime(analysis_date, '%Y-%m-%d') 
+    date_unformat = datetime.strptime(analysis_date, '%Y-%m-%d')
     if date_unformat.month >= 10:
         oct_yr = date_unformat.year
     else:
@@ -96,13 +109,13 @@ def main():
     print('get the variables we actually want')
     curr_vals['swe'] = (today_xds['OUT_SWE'] -
                         oct1_ds['OUT_SWE'].loc[dict(time='{}-10-01'.format(
-        oct_yr))].values)
+                            oct_yr))].values)
     curr_vals['sm'] = today_xds['OUT_SOIL_MOIST'].sum(dim='nlayer',
                                                       skipna=False)
     curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
     hist_xds = hist_xds.where(
-            (hist_xds['time'].dt.dayofyear >= day - 2) &
-            (hist_xds['time'].dt.dayofyear <= day + 2))
+        (hist_xds['time'].dt.dayofyear >= day - 2) &
+        (hist_xds['time'].dt.dayofyear <= day + 2))
     for var in ['swe', 'sm', 'tm']:
         print('allocate percentiles memory for {}'.format(var))
         pname = '{}percentile'.format(var)
@@ -111,9 +124,9 @@ def main():
                                    -9999 * np.ones(curr_vals[var].shape)),
                                   'category':
                                   (['lat', 'lon'],
-                                    -9999 * np.ones(curr_vals[var].shape))},
-                                  coords={'lon': curr_vals[var].lon,
-                                          'lat': curr_vals[var].lat})
+                                   -9999 * np.ones(curr_vals[var].shape))},
+                                 coords={'lon': curr_vals[var].lon,
+                                         'lat': curr_vals[var].lat})
         print('calculate percentiles for {}'.format(var))
         percentiles[pname] = xr.apply_ufunc(
             run_percentileofscore, hist_xds[var], curr_vals[var],
