@@ -28,83 +28,6 @@ def define_url(var, year, num_lon, num_lat, num_day):
                 var[1], num_day[0], num_day[1], num_lon, num_lat))
 
 
-def recreate_attrs(met_ds):
-    ''' add attributes back into data sets because xarray will receive error
-        "Illegal attribute" when opening url and delete all attributes'''
-    # set up some geographic information
-    esri_str = ("GEOGCS[\\\"GCS_WGS_1984\\\",DATUM" +
-                "[\\\"D_WGS_1984\\\",SPHEROID\\\"WGS_1984\\\"," +
-                "6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0]," +
-                "UNIT[\\\"Degree\\\",0.0174532925199433]]")
-    for var in met_ds.variables:
-        met_ds[var].attrs['_FillValue'] = -32767.
-        met_ds[var].attrs['esri_pe_string'] = esri_str
-        if (var != 'lon') & (var != 'lat'):
-            met_ds[var].attrs['coordinates'] = 'lon lat'
-            met_ds[var].attrs['missing_value'] = -32767.
-    # global attributes
-    met_ds.attrs['author'] = ('John Abatzoglou - University of ' +
-                              'Idaho, jabatzoglou@uidaho.edu')
-    met_ds.attrs['date'] = datetime.now().strftime('%d %B %Y')
-    met_ds.attrs['note1'] = ('The projection information for this ' +
-                             'file is: GCS WGS 1984.')
-    met_ds.attrs['note2'] = ('Citation: Abatzoglou, J.T., 2013, ' +
-                             'Development of gridded surface ' +
-                             'meteorological data for ecological ' +
-                             'applications and modeling, International ' +
-                             'Journal of Climatology, ' +
-                             'DOI:10.1002/joc.3413')
-    met_ds.attrs['last_permanent_slice'] = "50"
-    met_ds.attrs['note3'] = ('Data in slices after ' +
-                             'last_permanent_slice (1-based) are ' +
-                             'considered provisional and subject to ' +
-                             'change with subsequent updates')
-    # latitude attributes
-    met_ds.lat.attrs['units'] = "degrees_north"
-    met_ds.lat.attrs['description'] = "latitude"
-    # longitude attributes
-    met_ds.lon.attrs['units'] = "degrees_east"
-    met_ds.lon.attrs['description'] = "longitude"
-
-    # time attributes
-    met_ds.time.attrs['units'] = "days since 1900-01-01 00:00:00"
-    met_ds.time.attrs['calendar'] = "gregorian"
-    met_ds.time.attrs['description'] = "days since 1900-01-01"
-
-    # parameter attributes
-    # precipitation
-    met_ds.precipitation_amount.attrs['units'] = "mm"
-    met_ds.precipitation_amount.attrs['description'] = ('Daily Accumulation' +
-                                                        ' Precipitation')
-    met_ds.precipitation_amount.attrs['cell_methods'] = ('time: sum(' +
-                                                         'intervals: 24 hours)')
-
-    # temperature
-    met_ds.tmmn.attrs['description'] = "Daily Minimum Temperature"
-    met_ds.tmmx.attrs['description'] = "Daily Maximum Temperature"
-    for var in ['tmmn', 'tmmx']:
-        met_ds[var].attrs['units'] = "degC"
-        met_ds[var].attrs['cell_methods'] = "time: sum(interval: 24 hours)"
-        met_ds[var].attrs['height'] = "2 m"
-
-    # wind speed
-    met_ds.wind_speed.attrs['units'] = "m/s"
-    met_ds.wind_speed.attrs['description'] = "Daily Mean Wind Speed"
-    met_ds.wind_speed.attrs['height'] = "10 m"
-
-    # shortwave radiation
-    met_ds.surface_downwelling_shortwave_flux_in_air.attrs['units'] = "W m-2"
-    met_ds.surface_downwelling_shortwave_flux_in_air.attrs['description'] = (
-        'Daily Mean Downward Shortwave Radiation At Surface')
-
-    # specific humidity
-    met_ds.specific_humidity.attrs['units'] = "kg/kg"
-    met_ds.specific_humidity.attrs['description'] = "Daily Mean Specific Humidity"
-    met_ds.specific_humidity.attrs['height'] = "2 m"
-
-    return met_ds
-
-
 def main():
     '''
     Download data from
@@ -118,10 +41,6 @@ def main():
                         help='configuration file')
     args = parser.parse_args()
     config_dict = read_config(args.config_file)
-
-    # get units conversion from cf_units for K to degC
-    units_in = cf_units.Unit('K')
-    units_out = cf_units.Unit('degC')
 
     # initialize cdo
     cdo = Cdo()
@@ -219,6 +138,8 @@ def main():
 
     for var in ('tmmn', 'tmmx'):
         # Perform units conversion
+        units_in = cf_units.Unit(met_dsets[var].air_tempurature.attrs['units'])
+        units_out = cf_units.Unit('degC')
         units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
                          inplace=True)
         # Fix _FillValue after unit conversion
@@ -226,12 +147,11 @@ def main():
             met_dsets[var].air_temperature < -30000] = -32767.
         # Change variable names so that tmmn and tmax are different
         met_dsets[var].rename({'air_temperature': var}, inplace=True)
+        met_dsets[var].attrs['units'] = "degC"
     merge_ds = xr.merge(list(met_dsets.values()))
     merge_ds.transpose('day', 'lat', 'lon')
     # MetSim requires time dimension be named "time"
     merge_ds.rename({'day': 'time'}, inplace=True)
-    # add attributes
-    merge_ds = recreate_attrs(merge_ds)
     # Make sure tmax >= tmin always
     tmin = np.copy(merge_ds['tmmn'].values)
     tmax = np.copy(merge_ds['tmmx'].values)
