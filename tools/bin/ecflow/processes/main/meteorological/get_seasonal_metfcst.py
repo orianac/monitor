@@ -117,7 +117,11 @@ def main():
             config_dict['ECFLOW']['new_Config'], header=None, **kwargs)
         outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
         print('Conservatively remap and write to {0}'.format(outfile))
-        cdo.remapcon(grid_file, input=merge_ds, output=outfile)
+        temporary = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                 'seasonal_fcst_temp.nc')
+        merge_ds.to_netcdf(temporary)
+        cdo.remapcon(grid_file, input=temporary, output=outfile)
+        os.remove(temporary)
 
 
 if __name__ == '__main__':
