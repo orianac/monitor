@@ -1,6 +1,8 @@
 ''' merge_fluxes.py
 usage: python merge_fluxes.py <config_file> <time_horizon_type>
-usage note: time_horizon_type must be MONITOR
+usage note: time_horizon_type must be MONITOR. this script is called
+by monitor/tools/bin/ecflow/processes/US/post_processing/percentiles.ecf.
+It is needed in order to calculate accumulated runoff.
 
 This script uses cdo.mergetime to combine VIC flux files into
 a single file per year. It is written to append the most recent data
@@ -15,8 +17,8 @@ from tonic.io import read_config
 
 
 def main():
-    ''' Uses cdo.mergetime to combine VIC flux files, keeping the data from the first
-        input file when dates overlap '''
+    ''' Uses cdo.mergetime to combine VIC flux files, keeping the data from
+        the first input file when dates overlap '''
     # read in configuration file
     parser = argparse.ArgumentParser(description='Merge VIC flux files in ' +
                                      'time to have one flux file per year')
