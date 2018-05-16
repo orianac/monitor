@@ -144,6 +144,8 @@ def main():
         print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['t_min'].values[swap_values] = tmax[swap_values]
     merge_ds['t_max'].values[swap_values] = tmin[swap_values]
+    # write merge_ds to a temporary file so that we don't run into
+    # issues with the system /tmp directoy filling up
     temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_state')
     merge_ds.to_netcdf(temporary)
     # conservatively remap to grid file

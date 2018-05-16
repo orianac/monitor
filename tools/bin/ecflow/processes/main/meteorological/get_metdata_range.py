@@ -180,6 +180,8 @@ def main():
     swap_values = ((tmin > tmax) & (tmax != -32767.))
     merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
     merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
+    # write merge_ds to a temporary file so that we don't run into
+    # issues with the system /tmp directoy filling up
     temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_out')
     merge_ds.to_netcdf(temporary)
     # conservatively remap to grid file
