@@ -1,8 +1,6 @@
 #!/bin/bash
-#PBS -j oe
-#PBS -S /bin/bash
-#PBS -m e
-#PBS -M eclark2@uw.edu
-#PBS -l walltime=04:00:00
-#PBS -l nodes=1:ppn=16
-
+#SBATCH --mail-user=orianac@uw.edu
+#SBATCH -t 0-04:00:00
+#SBATCH -N 1
+#SBATCH -p hydro
+#SBATCH --mem=120gb
