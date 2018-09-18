@@ -24,8 +24,8 @@ def define_url(var, year, num_lon, num_lat, num_day):
     return ('http://thredds.northwestknowledge.net:8080/thredds/dodsC/MET/' +
             '{0}/{0}_{1}.nc?lon[0:1:{2}],lat[0:1:{3}],day[{4}:1:{5}],'.format(
                 var[0], year, num_lon, num_lat, num_day[0], num_day[1]) +
-            '{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
-                var[1], num_day[0], num_day[1], num_lon, num_lat))
+            'crs[0:1:0],{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
+                var[1], num_day[0], num_day[1], num_lat, num_lon))
 
 
 def main():
@@ -138,7 +138,7 @@ def main():
 
     for var in ('tmmn', 'tmmx'):
         # Perform units conversion
-        units_in = cf_units.Unit(met_dsets[var].air_tempurature.attrs['units'])
+        units_in = cf_units.Unit(met_dsets[var].air_temperature.attrs['units'])
         units_out = cf_units.Unit('degC')
         units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
                          inplace=True)
@@ -149,6 +149,7 @@ def main():
         met_dsets[var].rename({'air_temperature': var}, inplace=True)
         met_dsets[var].attrs['units'] = "degC"
     merge_ds = xr.merge(list(met_dsets.values()))
+    merge_ds = merge_ds.drop('crs')
     merge_ds.transpose('day', 'lat', 'lon')
     # MetSim requires time dimension be named "time"
     merge_ds.rename({'day': 'time'}, inplace=True)

@@ -27,8 +27,8 @@ def define_url(var, year, num_lon, num_lat, num_day):
     return ('http://thredds.northwestknowledge.net:8080/thredds/dodsC/MET/' +
             '{0}/{0}_{1}.nc?lon[0:1:{2}],lat[0:1:{3}],day[{4}:1:{5}],'.format(
                 var[0], year, num_lon, num_lat, num_day[0], num_day[1]) +
-            '{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
-                var[1], num_day[0], num_day[1], num_lon, num_lat))
+            'crs[0:1:0],{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
+                var[1], num_day[0], num_day[1], num_lat, num_lon))
 
 
 def main():
@@ -51,10 +51,14 @@ def main():
                         help='first date of data to download, first' +
                              ' day of VIC simulation, YYYY-MM-DD. Note:' +
                              ' for MONITOR, this should be a date for ' +
-                             'which there is a VIC state file')
+                             'which there is a VIC state file, it should' +
+                             ' also be 60 days before the last day you ran '+
+                             'the system successfully')
     parser.add_argument('end_date',
                         help='last date of data to download, last ' +
-                             'day of VIC simulation, YYYY-MM-DD')
+                             'day of VIC simulation, YYYY-MM-DD, probably '
+                             'this date is yesterday, if you are running it'
+                             ' before the system runs normally at 1:30')
     args = parser.parse_args()
     config_dict = read_config(args.config_file)
 
@@ -169,6 +173,7 @@ def main():
         # Change variable names so that tmmn and tmax are different
         met_dsets[var].rename({'air_temperature': var}, inplace=True)
     merge_ds = xr.merge(list(met_dsets.values()))
+    merge_ds = merge_ds.drop('crs')
     merge_ds.transpose('day', 'lat', 'lon')
     # MetSim requires time dimension be named "time"
     merge_ds.rename({'day': 'time'}, inplace=True)
