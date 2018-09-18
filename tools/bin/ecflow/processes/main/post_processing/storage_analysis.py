@@ -21,14 +21,14 @@ def run_percentileofscore(historical, current, var):
         require that the historical mean and current value are both
         at least 10 mm '''
     xhist = historical[~np.isnan(historical)]
-    xhist = xhist[xhist != -9999]
+    xhist = xhist[xhist != np.nan]
     if xhist.size:
-        # apply 10mm threshold to SWE
+        # apply 10mm threshold to SWE returning nan if below threshold
         if (var == 'swe') and ((xhist.mean() < 10) or (current < 10)):
-            return -9999
+            return np.nan
         return stats.percentileofscore(
             historical[~np.isnan(historical)], current)
-    return -9999
+    return np.nan
 
 
 def return_category(percentile):
@@ -121,10 +121,10 @@ def main():
         pname = '{}percentile'.format(var)
         percentiles = xr.Dataset({pname:
                                   (['lat', 'lon'],
-                                   -9999 * np.ones(curr_vals[var].shape)),
+                                   np.nan * np.ones(curr_vals[var].shape)),
                                   'category':
                                   (['lat', 'lon'],
-                                   -9999 * np.ones(curr_vals[var].shape))},
+                                   np.nan * np.ones(curr_vals[var].shape))},
                                  coords={'lon': curr_vals[var].lon,
                                          'lat': curr_vals[var].lat})
         print('calculate percentiles for {}'.format(var))
@@ -139,8 +139,8 @@ def main():
                                                  output_dtypes=[float],
                                                  vectorize=True)
         print('add attributes')
-        percentiles[pname].attrs['_FillValue'] = -9999.
-        percentiles['category'].attrs['_FillValue'] = -9999.
+        percentiles[pname].attrs['_FillValue'] = np.nan
+        percentiles['category'].attrs['_FillValue'] = np.nan
         percentiles.attrs['analysis_date'] = analysis_date
         percentiles.attrs['title'] = '{} percentiles'.format(title[var])
         percentiles.attrs['comment'] = ('Calculated from output from the'
