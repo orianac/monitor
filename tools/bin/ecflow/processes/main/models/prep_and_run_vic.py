@@ -9,11 +9,13 @@ This script creates a global file from the template with the correct
 import argparse
 import subprocess
 import os
+from datetime import timedelta
 from dateutil.parser import parse
 
 from tonic.io import read_config
 from monitor import model_tools
-
+import xarray as xr
+import pandas as pd
 
 def main():
     ''' Prepare global file from template and run VIC. Uses mpirun
@@ -33,9 +35,18 @@ def main():
     global_template = config_dict['DOMAIN']['GlobalFileTemplate']
     global_file_path = config_dict[section]['GlobalFilePath']
     # get important dates
-    vic_start_date = config_dict[section]['Start_Date']
-    vic_end_date = config_dict[section]['End_Date']
-    vic_save_state = config_dict[section]['vic_save_state']
+    ds_seas = xr.open_dataset(config_dict[section]['Orig_Met'])
+    vic_start_date = pd.to_datetime(ds_seas['time'].values[0]).strftime('%Y-%m-%d')
+    vic_end_date = pd.to_datetime(ds_seas['time'].values[-1]).strftime('%Y-%m-%d')
+    vic_save_state = (pd.to_datetime(ds_seas['time'].values[-1]) +
+                      timedelta(days=1)).strftime('%Y-%m-%d')
+
+    # but if you're doing the seasonal forecast you'll want the first date to
+    # be the day after the end of the medium range forecast
+    if section == 'SEAS_FCST':
+        ds_med = xr.open_dataset(config_dict['MED_FCST']['Orig_Met'])
+        vic_start_date = (pd.to_datetime(ds_med['time'].values[-1]) +
+                      timedelta(days=1)).strftime('%Y-%m-%d')
 
     forcing_prefix = os.path.join(
         config_dict[section]['Subd_Out_Dir'],

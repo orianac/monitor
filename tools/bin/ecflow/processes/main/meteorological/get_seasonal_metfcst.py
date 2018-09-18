@@ -17,6 +17,7 @@ import pandas as pd
 import xarray as xr
 from cdo import Cdo
 import cf_units
+import numpy as np
 
 from tonic.io import read_config
 from monitor import model_tools
@@ -44,31 +45,6 @@ def read_and_convert_data(model, var):
     units_in.convert(xds[var].values[:], units_out, inplace=True)
     xds[var].attrs['units'] = new_units[var]
     return xds
-
-
-def get_dates(config_dict, merge_ds):
-    ''' Define dates to use in updated configuration file. Start comes from
-        the last day of the medium range forecast, and end is taken from the
-        downloaded data. '''
-    end_date = pd.to_datetime(merge_ds.time.values[-1])
-    start_date = datetime.strptime(config_dict['MED_FCST']['End_Date'],
-                                   '%Y-%m-%d') + timedelta(days=1)
-    start_date_format = start_date.strftime('%Y-%m-%d')
-    end_date_format = end_date.strftime('%Y-%m-%d')
-    vic_save_state_format = (end_date + timedelta(days=1)).strftime(
-        '%Y-%m-%d')
-    # replace start date, end date and met location in the configuration
-    # file
-    return {'START_DATE': config_dict['MONITOR']['Start_Date'],
-            'END_DATE': config_dict['MONITOR']['End_Date'],
-            'VIC_SAVE_STATE': config_dict['MONITOR']['vic_save_state'],
-            'MED_START_DATE': config_dict['MED_FCST']['Start_Date'],
-            'MED_END_DATE': config_dict['MED_FCST']['End_Date'],
-            'MED_VIC_SAVE_STATE':
-            config_dict['MED_FCST']['vic_save_state'],
-            'SEAS_START_DATE': start_date_format,
-            'SEAS_END_DATE': end_date_format,
-            'SEAS_VIC_SAVE_STATE': vic_save_state_format}
 
 
 def main():
@@ -109,12 +85,14 @@ def main():
             dlist.append(read_and_convert_data(model, var))
         merge_ds = xr.merge(dlist)
         merge_ds = merge_ds.transpose('time', 'lat', 'lon')
-        kwargs = get_dates(config_dict, merge_ds)
-        # replace start date, end date and met location in the configuration
-        # file
-        model_tools.replace_var_pythonic_config(
-            config_dict['ECFLOW']['old_Config'],
-            config_dict['ECFLOW']['new_Config'], header=None, **kwargs)
+#        outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
+#        merge_ds = xr.open_dataset(outfile)
+        # Make sure tmax >= tmin always
+        tmin = np.copy(merge_ds['tasmin'].values)
+        tmax = np.copy(merge_ds['tasmax'].values)
+        swap_values = ((tmin > tmax) & (tmax != -32767.))
+        merge_ds['tasmin'].values[swap_values] = tmax[swap_values]
+        merge_ds['tasmax'].values[swap_values] = tmin[swap_values]
         outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
         print('Conservatively remap and write to {0}'.format(outfile))
         # write merge_ds to a temporary file so that we don't run into
