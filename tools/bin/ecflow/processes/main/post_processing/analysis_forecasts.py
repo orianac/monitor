@@ -75,6 +75,9 @@ def main():
     args = parser.parse_args()
     config_dict = read_config(args.config_file)
     section = args.time_horizon_type
+    title = {'swe': 'SWE', 'sm': 'Total column soil moisture',
+                     'tm': 'Total moisture storage',
+             'ro': 'Total runoff'}
     if section == 'MED_FCST':
         model = 'CFSv2'
         med_met_fcst_loc = config_dict['MED_FCST']['Met_Loc']
@@ -101,8 +104,6 @@ def main():
             print('get the variables we actually want')
 #            agg_xds = forecast_xds['OUT_SWE'].rolling(time=agg).mean()
 #            today = agg_xds.loc[dict(time=start_date)]
-            title = {'swe': 'SWE', 'sm': 'Total column soil moisture',
-                     'tm': 'Total moisture storage'}
                 # remove Oct. 1 SWE at start of water year to correct for perennial SWE
             if start_date.month >= 10:
                 oct_yr = start_date.year
@@ -117,10 +118,11 @@ def main():
             curr_vals['swe'] = (xr.DataArray(swe_subtracted,
                                             coords=forecast_xds['OUT_SWE'].coords,
                                             dims=['time', 'lat', 'lon'])).isel(time=slice(0,agg)).mean(dim='time')
-            curr_vals['swe'].to_netcdf('/civil/hydro/climate_toolbox/post_processing/cdf_results/us/junk.nc')
             curr_vals['sm'] = forecast_xds['OUT_SOIL_MOIST'].sum(dim='nlayer',
                                          skipna=False).isel(time=slice(0,agg)).mean(dim='time')
             curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
+            runoff = forecast_xds['OUT_RUNOFF']+forecast_xds['OUT_BASEFLOW']
+            curr_vals['ro'] = runoff.isel(time=slice(0,agg)).mean(dim='time')
             # this gets the analysis date to be in the middle of the period of interest
             analysis_date = start_date + timedelta(days=int(agg/2))
             day = int(forecast_xds['OUT_SWE'].loc[dict(time=start_date)].time.dt.dayofyear)
@@ -129,10 +131,7 @@ def main():
             hist_xds = hist_xds.where(
                 (hist_xds['time'].dt.dayofyear >= day - int(agg/2)) &
                 (hist_xds['time'].dt.dayofyear <= day + int(agg/2)))
-            print(hist_xds.dims)
-            print(hist_xds.coords)
-            print('ABOVE!!!!!!!!')
-            for var in ['swe', 'sm', 'tm']:
+            for var in ['swe', 'sm', 'tm', 'ro']:
                 pname = '{0}day_{1}percentile'.format(agg, var)
                 percentiles = xr.Dataset({pname:
                                   (['lat', 'lon'],
@@ -214,8 +213,6 @@ def main():
         for (month_num, month_name) in zip(month_nums, month_names):
             curr_vals = {}
             print('get the variables we actually want')
-            title = {'swe': 'SWE', 'sm': 'Total column soil moisture',
-                     'tm': 'Total moisture storage'}
                 # remove Oct. 1 SWE at start of water year to correct for perennial SWE
             if med_start_date.month >= 10:
                 oct_yr = med_start_date.year
@@ -235,6 +232,8 @@ def main():
                                          skipna=False).groupby('time.month').mean(
                                              dim='time').sel(month=month_num)
             curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
+            runoff = merged_forecast_xds['OUT_RUNOFF']+merged_forecast_xds['OUT_BASEFLOW']
+            curr_vals['ro'] = runoff.groupby('time.month').mean(dim='time').sel(month=month_num)
             # this gets the analysis date to be in the middle of the period of interest
             # Get historical CDF by selecting the window centered on the analysis day of year
             # with window width of the aggregation period (7, 15 or 30 days)
@@ -242,7 +241,8 @@ def main():
             hist_xds = xr.open_dataset(config_dict['PERCENTILES']['historic_VIC_out'],
                                chunks={'lat': 100, 'lon': 100})
             hist_xds = hist_xds.where(hist_xds['time'].dt.month == month_num)
-            for var in ['swe', 'sm', 'tm']:
+            hist_xds.to_netcdf('fluxes.nc'+str(month_num))
+            for var in ['swe', 'sm', 'tm', 'ro']:
                 pname = '{0}_average_{1}percentile'.format(month_name, var)
                 percentiles = xr.Dataset({pname:
                                   (['lat', 'lon'],
