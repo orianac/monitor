@@ -92,8 +92,8 @@ def main():
         swap_values = ((tmin > tmax) & (tmax != -32767.))
         merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
         merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
-
-        outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
+        today = datetime.now().strftime('%Y-%m-%d')
+        outfile = os.path.join(met_fcst_loc, '%s.%s.nc' % (model, today))
         print('Conservatively remap and write to {0}'.format(outfile))
         # write merge_ds to a temporary file so that we don't run into
         # issues with the system /tmp directoy filling up

@@ -26,11 +26,10 @@ from monitor import model_tools
 def read_and_convert_data(model, var):
     ''' Read data from URL for model and var, then convert variable units
         to metric '''
-    url = ('http://tds-proxy.nkn.uidaho.edu/thredds/dodsC/' +
-           'NWCSC_INTEGRATED_SCENARIOS_ALL_CLIMATE/bcsd-nmme/' +
-           'dailyForecasts/' +
-           'bcsd_nmme_metdata_%s_forecast_%s_daily.nc' % (
-               model, var))
+    url = ('http://thredds.northwestknowledge.net:8080/thredds/'+
+           'dodsC/NWCSC_INTEGRATED_SCENARIOS_ALL_CLIMATE/'
+           'bcsd-nmme/dailyForecasts/bcsd_nmme_metdata_%s_forecast_%s_daily.nc' % (
+              model, var))
     print('Reading {0}'.format(url))
     xds = xr.open_dataset(url)
     # Define units
@@ -85,15 +84,14 @@ def main():
             dlist.append(read_and_convert_data(model, var))
         merge_ds = xr.merge(dlist)
         merge_ds = merge_ds.transpose('time', 'lat', 'lon')
-#        outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
-#        merge_ds = xr.open_dataset(outfile)
         # Make sure tmax >= tmin always
         tmin = np.copy(merge_ds['tasmin'].values)
         tmax = np.copy(merge_ds['tasmax'].values)
         swap_values = ((tmin > tmax) & (tmax != -32767.))
         merge_ds['tasmin'].values[swap_values] = tmax[swap_values]
         merge_ds['tasmax'].values[swap_values] = tmin[swap_values]
-        outfile = os.path.join(met_fcst_loc, '%s.nc' % (model))
+        today = datetime.now().strftime('%Y-%m-%d')
+        outfile = os.path.join(met_fcst_loc, '%s.%s.nc' % (model, today))
         print('Conservatively remap and write to {0}'.format(outfile))
         # write merge_ds to a temporary file so that we don't run into
         # issues with the system /tmp directoy filling up
