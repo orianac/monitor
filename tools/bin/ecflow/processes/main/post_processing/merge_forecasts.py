@@ -8,9 +8,10 @@ import os
 import argparse
 from datetime import datetime
 from cdo import Cdo
-
+import xarray as xr
 from tonic.io import read_config
-
+import pandas as pd
+from datetime import datetime, timedelta
 
 def main():
     ''' Uses cdo.mergetime to combine VIC flux files, keeping the data from the first
@@ -28,14 +29,45 @@ def main():
     section = args.time_horizon_type
     cdo = Cdo()
     cdo.env['SKIP_SAME_TIME'] = '1'
-    # get dates for file names
-    start_date_format = config_dict[section]['Start_Date']
-    start_date = datetime.strptime(start_date_format, '%Y-%m-%d')
-    end_date_format = config_dict[section]['End_Date']
-    end_date = datetime.strptime(end_date_format, '%Y-%m-%d')
+    # get dates for file names by opening the metdata file
+    ds = xr.open_dataset(config_dict[section]['Orig_Met'])
+    if section == 'MED_FCST':
+        model = 'CFSv2'
+        med_met_fcst_loc = config_dict['MED_FCST']['Met_Loc']
+        med_fcst_ds = xr.open_dataset(os.path.join(med_met_fcst_loc, '%s.nc' % (model)))
+    # Overwrite start_date to be one day after the final date of the monitor.
+    # Overwrite end_date to be the final date of the medium range forecast.
+        start_date = datetime.strptime(config_dict['MONITOR']['End_Date'],
+                  '%Y-%m-%d') + timedelta(days=1)
+        start_date_format = start_date.strftime('%Y-%m-%d')
+        end_date = pd.to_datetime(med_fcst_ds['time'].values[-1])
+        end_date_format = end_date.strftime('%Y-%m-%d')
+    elif section == 'SEAS_FCST':
+    # Eventually, we might want to run multiple ensemble members. Dates could still be
+    # read from the just one file but forcing = config_dict[section]['Orig_Met'] will
+    # probably need to change
+        model = 'CFSv2'
+        med_met_fcst_loc = config_dict['MED_FCST']['Met_Loc']
+        med_fcst_ds = xr.open_dataset(os.path.join(med_met_fcst_loc, '%s.nc' % (model)))
+    # Overwrite start_date to be one day after the final date of the medium range forecast.
+        # Overwrite end_date to be the final date of the seasonal range forecast.
+        start_date = pd.to_datetime(med_fcst_ds['time'].values[-1]) +\
+                  timedelta(days=1)
+        start_date_format = start_date.strftime('%Y-%m-%d')
+        model = 'ENSMEAN'
+        seas_met_fcst_loc = config_dict['SEAS_FCST']['Met_Loc']
+        seas_fcst_ds = xr.open_dataset(os.path.join(seas_met_fcst_loc, '%s.nc' % (model)))
+        end_date = pd.to_datetime(seas_fcst_ds['time'].values[-1])
+        end_date_format = end_date.strftime('%Y-%m-%d')
     # data is read from and saved to the same directory
     vic_dir = config_dict[section]['OutputDirRoot']
-    vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(start_date_format))
+    print(start_date)
+    print(end_date)
+    print(type(start_date))
+    print(type(end_date))
+    print(type(start_date_format))
+    print(type(end_date_format))
+    vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(start_date))
     if section == 'MED_FCST':
         prev_vic_dir = config_dict['MONITOR']['OutputDirRoot']
     elif section == 'SEAS_FCST':
@@ -44,6 +76,7 @@ def main():
         # merge data into file from same year
         merged_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(
             start_date.year))
+        print(merged_out)
         merged_in = os.path.join(prev_vic_dir, 'fluxes.{}.nc'.format(
             start_date.year))
         if os.path.isfile(merged_in) and os.path.isfile(vic_out):
@@ -52,6 +85,7 @@ def main():
                           output=merged_out)
     else:
         for year in range(start_date.year, end_date.year + 1):
+            print(merged_out)
             # merge data into file from same year
             merged_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
             merged_in = os.path.join(prev_vic_dir, 'fluxes.{}.nc'.format(year))

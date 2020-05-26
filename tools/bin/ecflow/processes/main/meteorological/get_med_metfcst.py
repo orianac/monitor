@@ -9,19 +9,22 @@ https://tds-proxy.nkn.uidaho.edu/thredds/fileServer/
 delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in. To start, we just download multi-model ensemble mean.
 '''
+print('herebegin')
 import os
 import argparse
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
+print('xarray')
 import xarray as xr
 from cdo import Cdo
 import cf_units
-
+from itertools import product
+print('during')
 from tonic.io import read_config
 from monitor import model_tools
 
-
+print('after')
 def main():
     ''' Download meteorological forecast data for 90-day forecast
         from http://thredds.northwestknowledge.net:8080/thredds/catalog/
@@ -33,7 +36,7 @@ def main():
                         help='configuration file')
     args = parser.parse_args()
     config_dict = read_config(args.config_file)
-
+    print('here!!')
     # initialize cdo
     cdo = Cdo()
 
@@ -42,7 +45,7 @@ def main():
 
     # read in grid_file from config file
     grid_file = config_dict['DOMAIN']['GridFile']
-
+    print('here!')
     # define variable names used when filling threads URL
     # an abbreviation and a full name is needed
     varnames = {'vs': 'wind_speed', 'tmmx': 'air_temperature',
@@ -57,15 +60,20 @@ def main():
     new_units = {'vs': 'm s-1', 'sph': 'kg kg-1',
                  'tmmx': 'degC', 'tmmn': 'degC', 'srad': 'W m-2',
                  'pr': 'mm', 'pet': 'mm'}
-
+    hours = ['00', '06', '12', '18']
+    members = ['1', '2', '3', '4']
+    combos = list(product(hours, members))
+    ensemble_members = ['_'.join([strings[0], strings[1]]) for strings in combos]
+    #ensemble_members = ['06_3']
+    print('here!')
     # download metdata from http://thredds.northwestknowledge.net
-    for model in modelnames:
+    for ensemble_member in ensemble_members:
         dlist = []
         for var, name in varnames.items():
             url = ('http://thredds.northwestknowledge.net:8080/thredds/dodsC/' +
                    'NWCSC_INTEGRATED_SCENARIOS_ALL_CLIMATE/' +
                    'cfsv2_metdata_90day/' +
-                   'cfsv2_metdata_forecast_%s_daily.nc' % (var))
+                   'cfsv2_metdata_forecast_%s_daily_%s_1.nc' % (var, ensemble_member))
             print('Reading {0}'.format(url))
             xds = xr.open_dataset(url)
             if name == 'air_temperature':
@@ -86,6 +94,7 @@ def main():
         # MetSim requires time dimension be named "time"
         merge_ds = merge_ds.drop('crs')
         merge_ds = merge_ds.transpose('time', 'lat', 'lon')
+
         # Make sure tmax >= tmin always
         tmin = np.copy(merge_ds['tmmn'].values)
         tmax = np.copy(merge_ds['tmmx'].values)
@@ -93,15 +102,28 @@ def main():
         merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
         merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
         today = datetime.now().strftime('%Y-%m-%d')
-        outfile = os.path.join(met_fcst_loc, '%s.%s.nc' % (model, today))
+        outfile = os.path.join(met_fcst_loc,ensemble_member, 'CFSv2.%s.%s.nc' % (ensemble_member, today))
         print('Conservatively remap and write to {0}'.format(outfile))
         # write merge_ds to a temporary file so that we don't run into
         # issues with the system /tmp directoy filling up
         temporary = os.path.join(config_dict['ECFLOW']['TempDir'],
-                                 'med_temp_{}'.format(model))
+                                 'med_temp_{}'.format(ensemble_member))
         merge_ds.to_netcdf(temporary)
         cdo.remapcon(grid_file, input=temporary, output=outfile)
-        os.remove(temporary)
+        ds = xr.open_dataset(outfile).load()
+        ds.close()
+        tmin = np.copy(ds['tmmn'].values)
+        tmax = np.copy(ds['tmmx'].values)
+        swap_values = ((tmin > tmax) & (tmax != -32767.))
+        nswap = np.sum(swap_values)
+        print('this is the dif before the swap')
+        print((ds['tmmx']-ds['tmmn']).min())
+        if nswap > 0:
+            print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
+        ds['tmmn'].values[swap_values] = tmax[swap_values]
+        ds['tmmx'].values[swap_values] = tmin[swap_values]
+        ds.to_netcdf(outfile)
+#        os.remove(temporary)
 
 
 if __name__ == "__main__":
