@@ -3,3 +3,4 @@
 #SBATCH -N 1
 #SBATCH --mem=8gb
 #SBATCH -p build
+#SBATCH --numcpus=16

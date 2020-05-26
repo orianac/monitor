@@ -4,3 +4,4 @@
 #SBATCH -N 1
 #SBATCH -p hydro
 #SBATCH --mem=120gb
+#SBATCH --numcpus=16
