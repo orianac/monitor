@@ -158,7 +158,17 @@ def main():
     # conservatively remap to grid file
     cdo.remapcon(grid_file, input=temporary, output=met_state)
     os.remove(temporary)
-
+    ds = xr.open_dataset(met_state).load()
+    ds.close()
+    tmin = np.copy(ds['t_min'].values)
+    tmax = np.copy(ds['t_max'].values)
+    swap_values = ((tmin > tmax) & (tmax != -32767.))
+    nswap = np.sum(swap_values)
+    if nswap > 0:
+        print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
+    ds['t_min'].values[swap_values] = tmax[swap_values]
+    ds['t_max'].values[swap_values] = tmin[swap_values]
+    ds.to_netcdf(met_state)
 
 if __name__ == '__main__':
     main()
