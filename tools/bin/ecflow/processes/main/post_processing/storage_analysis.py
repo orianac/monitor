@@ -24,11 +24,13 @@ def run_percentileofscore(historical, current, var):
     xhist = xhist[xhist != np.nan]
     if xhist.size:
         # apply 10mm threshold to SWE returning nan if below threshold
-        if (var == 'swe') and ((xhist.mean() < 10) or (current < 10)):
+        if (var == 'swe') and (xhist.mean() < 10):
             return np.nan
+        elif (var == 'swe') and ((xhist.mean() > 10) and (current < 10)):
+            return -1
         return stats.percentileofscore(
             historical[~np.isnan(historical)], current)
-    return np.nan
+    return -9999
 
 
 def return_category(percentile):
@@ -56,8 +58,12 @@ def return_category(percentile):
         category = 9
     elif percentile >= 98:
         category = 10
-    else:
+    elif percentile == -1:
+        category = -1
+    elif percentile == -9999:
         category = -9999
+    else:
+        category = np.nan
     return category
 
 
@@ -108,7 +114,7 @@ def main():
     # extract variables
     print('get the variables we actually want')
     curr_vals['swe'] = (today_xds['OUT_SWE'] -
-                        oct1_ds['OUT_SWE'].loc[dict(time='{}-10-01'.format(
+                        oct1_ds['OUT_SWE'].loc[dict(time='{}-09-30'.format(
                             oct_yr))].values)
     curr_vals['sm'] = today_xds['OUT_SOIL_MOIST'].sum(dim='nlayer',
                                                       skipna=False)
@@ -140,7 +146,9 @@ def main():
                                                  vectorize=True)
         print('add attributes')
         percentiles[pname].attrs['_FillValue'] = np.nan
+        percentiles[pname].attrs['missing_value'] = -9999
         percentiles['category'].attrs['_FillValue'] = np.nan
+        percentiles['category'].attrs['missing_value'] = -9999
         percentiles.attrs['analysis_date'] = analysis_date
         percentiles.attrs['title'] = '{} percentiles'.format(title[var])
         percentiles.attrs['comment'] = ('Calculated from output from the'

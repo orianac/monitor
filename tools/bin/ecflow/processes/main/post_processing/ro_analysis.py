@@ -52,9 +52,12 @@ def get_ro_cytd(xds_runoff):
         if calendar.isleap(year):
             first = '{}-02-29'.format(year)
             last = '{}-12-31'.format(year)
-            xsum.loc[dict(time=slice(first, last))] = (
-                xsum.loc[dict(time=slice(first, last))] -
-                xds_runoff.loc[dict(time=first)].values)
+            try:
+                xsum.loc[dict(time=slice(first, last))] = (
+                    xsum.loc[dict(time=slice(first, last))] -
+                    xds_runoff.loc[dict(time=first)].values)
+            except:
+                print("We're in January/February!")
     return xsum
 
 
@@ -64,7 +67,8 @@ def get_ro_wytd(xds_runoff):
     xsum = xds_runoff.groupby(xds_runoff.water_year).apply(
         lambda xsum: xsum.cumsum(dim='time', skipna=False))
     for year in np.unique(xds_runoff.water_year):
-        if calendar.isleap(year):
+        if calendar.isleap(year) and '{}-02-29'.format(year) in xsum.time.values:
+            print('leap year!')
             first = '{}-02-29'.format(year)
             last = '{}-09-30'.format(year)
             # only remove runoff for same water year, which ends Sep. 30

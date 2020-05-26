@@ -127,6 +127,7 @@ def main():
         print('open {}'.format(infile))
 # this will open all of the different runs (we'll use this for the probability calculations down below)
         ensemble_xds = xr.open_mfdataset('/civil/hydro/climate_toolbox/run_vic/output/med_fcst/us/*/fluxes.{}.nc'.format(start_date_format), concat_dim='ensemble_member')
+        ensemble_xds = ensemble_xds.assign_coords(ensemble_member=['ensemble_{}'.format(i) for i in range(16)])
         forecast_xds = ensemble_xds.mean(dim='ensemble_member')
         forecast_xds.to_netcdf(os.path.join(config_dict[section]['OutputDirRoot'], 'mean_fluxes.{}.nc'.format(start_date_format)))
         #forecast_xds = xr.open_dataset(infile)
@@ -145,79 +146,83 @@ def main():
         for setup in time_frame_dict.keys(): # first do the calculations for the mean, then the probabilities
             start_day = time_frame_dict[setup]['start_day']
             span = time_frame_dict[setup]['span']
-            scenarios = {'mean', 'ensemble'}
+            scenarios = {'mean': (forecast_xds, ['time', 'lat', 'lon'])}
+					# 'ensemble': (ensemble_xds, ['ensemble_member', 'time', 'lat', 'lon'])}
             # calculations for the mean
-            curr_vals = {}
-            print('get the variables we actually want')
+            for (scenario, (working_ds, working_dims)) in scenarios.items():
+                curr_vals = {}
+                print('get the variables we actually want')
                 # remove Oct. 1 SWE at start of water year to correct for perennial SWE
-            if start_date.month >= 10:
-                oct_yr = start_date.year
-            else:
-                oct_yr = start_date.year - 1
+                if start_date.month >= 10:
+                    oct_yr = start_date.year
+                else:
+                    oct_yr = start_date.year - 1
             # fix the SWE values so that after the subtraction out of last year's Oct 1 snowpack
             # there is no negative value
-            swe_subtracted = (forecast_xds['OUT_SWE'] -
-                        oct1_ds['OUT_SWE'].loc[dict(time='{}-09-30'.format(
-                            oct_yr))].values).values
-            swe_subtracted[ swe_subtracted < 0 ] = 0
-            # grab the last day of the period you're looking at
-            curr_vals['swe'] = (xr.DataArray(swe_subtracted,
-                                            coords=forecast_xds['OUT_SWE'].coords,
-                                            dims=['time', 'lat', 'lon'])).isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
-            curr_vals['sm'] = forecast_xds['OUT_SOIL_MOIST'].sum(dim='nlayer',
+                swe_subtracted = (working_ds['OUT_SWE'] -
+                            oct1_ds['OUT_SWE'].loc[dict(time='{}-09-30'.format(
+                                oct_yr))].values).values
+                swe_subtracted[ swe_subtracted < 0 ] = 0
+                # grab the last day of the period you're looking at
+                print(working_dims)
+                print(np.shape(swe_subtracted))
+
+                print(working_ds['OUT_SWE'].coords)
+                curr_vals['swe'] = (xr.DataArray(swe_subtracted,
+                                            coords=working_ds['OUT_SWE'].coords,
+                                            dims=working_dims)).isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
+                                            #dims=['time', 'lat', 'lon'])).isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
+                curr_vals['sm'] = working_ds['OUT_SOIL_MOIST'].sum(dim='nlayer',
                                          skipna=False).isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
-            curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
-            runoff = forecast_xds['OUT_RUNOFF']+forecast_xds['OUT_BASEFLOW']
-            curr_vals['ro'] = runoff.isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
+                curr_vals['tm'] = curr_vals['swe'] + curr_vals['sm']
+                runoff = working_ds['OUT_RUNOFF']+working_ds['OUT_BASEFLOW']
+                curr_vals['ro'] = runoff.isel(time=slice(start_day, start_day+span-1)).mean(dim='time')
             # this gets the analysis date to be in the middle of the period of interest
-            analysis_date = start_date + timedelta(days=start_day+int(span/2))
+                analysis_date = start_date + timedelta(days=start_day+int(span/2))
             # find the integer value of the day of year for the center of the analysis period
-            day = int(forecast_xds['OUT_SWE'].loc[dict(time=analysis_date)].time.dt.dayofyear)
+                day = int(working_ds['OUT_SWE'].loc[dict(time=analysis_date)].time.dt.dayofyear)
             # Get historical CDF by selecting the window centered on the analysis day of year
             # with window width of the aggregation period (7, 15 or 30 days)
-            hist_xds = hist_ds.where(
-                (hist_ds['time'].dt.dayofyear >= day - int(span/2)) &
-                (hist_ds['time'].dt.dayofyear <= day + int(span/2)))
-            print('this is hist_xds for {}'.format(setup))
-            print(hist_xds['sm'].mean().values)
-            #for var in ['sm']:
-            for var in ['swe', 'sm', 'tm', 'ro']:
-                pname = '{0}percentile'.format(var)
-                percentiles = xr.Dataset({pname:
-                                  (['lat', 'lon'],
-                                   np.nan * np.ones(curr_vals[var].shape)),
-                                  'category':
-                                  (['lat', 'lon'],
-                                   np.nan * np.ones(curr_vals[var].shape))},
-                                 coords={'lon': curr_vals[var].lon,
-                                         'lat': curr_vals[var].lat})
-                print('calculate percentiles for {}'.format(var))
-                percentiles[pname] = xr.apply_ufunc(
-                    run_percentileofscore, hist_xds[var], curr_vals[var],
-                    kwargs={'var': var}, input_core_dims=[['time'], []],
-                    dask='parallelized', output_dtypes=[float], vectorize=True)
-                print('calculate category for {}'.format(var))
-                print(percentiles[pname].mean().values)
-                percentiles['category'] = xr.apply_ufunc(return_category,
-                                                 percentiles[pname],
-                                                 dask='parallelized',
-                                                 output_dtypes=[float],
-                                                 vectorize=True)
-                print('add attributes')
-                percentiles[pname].attrs['_FillValue'] = np.nan
-                percentiles['category'].attrs['_FillValue'] = np.nan
-                percentiles.attrs['analysis_date'] = start_date_format
-                percentiles = add_metadata(percentiles)
-                percentiles.attrs['title'] = '{} percentiles'.format(title[var])
-                #for attr in ['VIC_Model_Version', 'VIC_Driver',
-                #     'references', 'Conventions', 'VIC_GIT_VERSION']:
-                #    percentiles.attrs[attr] = forecast_xds.attrs[attr]
-                print('save file')
-                outfile = os.path.join(
-                    config_dict[section]['Percentile_Loc'],
-                    'vic-CFSv2_{0}_{1}_{2}.nc'.format(setup, pname, start_date_format))
-                percentiles.to_netcdf(outfile)
-                print('{} saved'.format(outfile))
+                hist_xds = hist_ds.where(
+                    (hist_ds['time'].dt.dayofyear >= day - int(span/2)) &
+                    (hist_ds['time'].dt.dayofyear <= day + int(span/2)))
+                for var in ['swe', 'sm', 'tm', 'ro']:
+                    pname = '{0}percentile'.format(var)
+                    working_coords = {'lon': curr_vals[var].lon,
+                                             'lat': curr_vals[var].lat}
+                    if scenario == 'ensemble':
+                        working_coords['ensemble_member'] = curr_vals[var].ensemble_member
+                    percentiles = xr.Dataset({pname:
+                                       (working_dims[1:],
+                                       np.nan * np.ones(curr_vals[var].shape)),
+                                      'category':
+                                       (working_dims[1:],
+                                       np.nan * np.ones(curr_vals[var].shape))},
+                                     coords=working_coords)
+                    print('calculate percentiles for {}'.format(var))
+                    percentiles[pname] = xr.apply_ufunc(
+                        run_percentileofscore, hist_xds[var], curr_vals[var],
+                        kwargs={'var': var}, input_core_dims=[['time'], []],
+                        dask='parallelized', output_dtypes=[float], vectorize=True)
+                    print('calculate category for {}'.format(var))
+                    print(percentiles[pname].mean().values)
+                    percentiles['category'] = xr.apply_ufunc(return_category,
+                                                     percentiles[pname],
+                                                     dask='parallelized',
+                                                     output_dtypes=[float],
+                                                     vectorize=True)
+                    print('add attributes')
+                    percentiles[pname].attrs['_FillValue'] = np.nan
+                    percentiles['category'].attrs['_FillValue'] = np.nan
+                    percentiles.attrs['analysis_date'] = start_date_format
+                    percentiles = add_metadata(percentiles)
+                    percentiles.attrs['title'] = '{} percentiles'.format(title[var])
+                    print('save file')
+                    outfile = os.path.join(
+                        config_dict[section]['Percentile_Loc'],
+                        'vic-CFSv2_{0}_{1}_{2}.nc'.format(setup, pname, start_date_format))
+                    percentiles.to_netcdf(outfile)
+                    print('{} saved'.format(outfile))
 
 
     if section == 'SEAS_FCST':
