@@ -2,14 +2,15 @@
 %include <qsub_build.h>
 %include <head.h>
 %manual
-Creates netCDFs with percentiles for soil moisture, swe, 
-and soil moisture + swe (total moisture). 
-Transfers the netCDFs to the NKN network. 
+Creates netCDFs with percentiles for soil moisture, swe,
+and soil moisture + swe (total moisture).
+Transfers the netCDFs to the NKN network.
 %end
 
+source activate %ENVIRON%
 echo "Today is $(date)"
 
-python %ECF_HOME%/processes/main/post_processing/file_transfer.py %WORKING_CFG_FILE% MONITOR
-
+#python %ECF_HOME%/processes/main/post_processing/file_transfer.py %WORKING_CFG_FILE% SEAS_FCST
+python %ECF_HOME%/processes/main/post_processing/file_transfer.py /civil/hydro/climate_toolbox/monitor/config/working_python_US.cfg SEAS_FCST
 %include <tail.h>
 

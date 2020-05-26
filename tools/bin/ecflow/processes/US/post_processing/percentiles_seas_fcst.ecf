@@ -2,21 +2,19 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Creates netCDFs with percentiles for soil moisture, swe, 
-and soil moisture + swe (total moisture). 
-Transfers the netCDFs to the NKN network. 
+Creates netCDFs with percentiles for soil moisture, swe,
+and soil moisture + swe (total moisture).
+Transfers the netCDFs to the NKN network.
 NC_ENVIRON is a conda environment with working cdo and nco tools and bindings.
 ENVIRON is the primary conda environment. These can be the same.
 %end
 
 source activate %NC_ENVIRON%
 export CDO="%NC_ENVIRON%/bin/cdo"
-python %ECF_HOME%/processes/main/post_processing/merge_fluxes.py %WORKING_CFG_FILE% MONITOR
+#python %ECF_HOME%/processes/main/post_processing/merge_forecasts.py %WORKING_CFG_FILE% SEAS_FCST
 
 source activate %ENVIRON%
-python %ECF_HOME%/processes/main/post_processing/storage_analysis.py %WORKING_CFG_FILE% MONITOR
-
-python %ECF_HOME%/processes/main/post_processing/ro_analysis.py %WORKING_CFG_FILE% MONITOR
-
+#python %ECF_HOME%/processes/main/post_processing/analysis_forecasts.py %WORKING_CFG_FILE%.forecast SEAS_FCST
+python %ECF_HOME%/processes/main/post_processing/analysis_forecasts.py /civil/hydro/climate_toolbox/monitor/config/working_python_US.cfg SEAS_FCST
 %include <tail.h>
 

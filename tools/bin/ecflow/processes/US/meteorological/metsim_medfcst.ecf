@@ -2,7 +2,7 @@
 %include <qsub.h>
 %include <head.h>
 %manual
-Updates MetSim configuration file and runs MetSim to disaggregate forcings 
+Updates MetSim configuration file and runs MetSim to disaggregate forcings
 %end
 
 echo "Today is $(date)"
