@@ -35,23 +35,31 @@ def main():
     global_template = config_dict['DOMAIN']['GlobalFileTemplate']
     global_file_path = config_dict[section]['GlobalFilePath']
     # get important dates
-    ds_seas = xr.open_dataset(config_dict[section]['Orig_Met'])
-    vic_start_date = pd.to_datetime(ds_seas['time'].values[0]).strftime('%Y-%m-%d')
-    vic_end_date = pd.to_datetime(ds_seas['time'].values[-1]).strftime('%Y-%m-%d')
-    vic_save_state = (pd.to_datetime(ds_seas['time'].values[-1]) +
+    if section != 'MED_FCST':
+        ds_seas = xr.open_dataset(config_dict[section]['Orig_Met'])
+        vic_start_date = pd.to_datetime(ds_seas['time'].values[0]).strftime('%Y-%m-%d')
+        vic_end_date = pd.to_datetime(ds_seas['time'].values[-1]).strftime('%Y-%m-%d')
+        vic_save_state = (pd.to_datetime(ds_seas['time'].values[-1]) +
                       timedelta(days=1)).strftime('%Y-%m-%d')
 
     # but if you're doing the seasonal forecast you'll want the first date to
     # be the day after the end of the medium range forecast
     if section == 'SEAS_FCST':
+        # we want to start seasonal forecast the day after the last day of the medium forecast
         ds_med = xr.open_dataset(config_dict['MED_FCST']['Orig_Met'])
         vic_start_date = (pd.to_datetime(ds_med['time'].values[-1]) +
                       timedelta(days=1)).strftime('%Y-%m-%d')
-
-    forcing_prefix = os.path.join(
-        config_dict[section]['Subd_Out_Dir'],
-        'forcing_{0}-{1}.'.format(vic_start_date.replace('-', ''),
+    if section != 'MED_FCST':
+        forcing_prefix = os.path.join(
+            config_dict[section]['Subd_Out_Dir'],
+            'forcing_{0}-{1}.'.format(vic_start_date.replace('-', ''),
                                   vic_end_date.replace('-', '')))
+    if section == 'MED_FCST':
+        med_fcst_ds = xr.open_dataset(config_dict[section]['Orig_Met'])
+        vic_start_date = pd.to_datetime(med_fcst_ds['time'].values[0]).strftime('%Y-%m-%d')
+        vic_end_date = pd.to_datetime(med_fcst_ds['time'].values[-1]).strftime('%Y-%m-%d')
+        vic_save_state = (pd.to_datetime(med_fcst_ds['time'].values[-1]) +
+                      timedelta(days=1)).strftime('%Y-%m-%d')
 
     # parse out year, month, and day from the model dates, which have
     # the form YYYY-MM-DD
@@ -64,30 +72,51 @@ def main():
                             'state.%s%s%s_00000.nc' % (
                                 vic_start_date[:4], vic_start_date[5:7],
                                 vic_start_date[8:10]))
-
     kwargs = {
-        'Start_Year': start.year,
-        'Start_Month': start.month,
-        'Start_Day': start.day,
-        'End_Year': end.year,
-        'End_Month': end.month,
-        'End_Day': end.day,
-        'State_Year': save_state.year,
-        'State_Month': save_state.month,
-        'State_Day': save_state.day,
-        'In_State': in_state,
-        'State_Path': config_dict[section]['StatePath'],
-        'Result_Path': config_dict[section]['OutputDirRoot'],
-        'Forcing_Prefix': forcing_prefix}
+            'Start_Year': start.year,
+            'Start_Month': start.month,
+            'Start_Day': start.day,
+            'End_Year': end.year,
+            'End_Month': end.month,
+            'End_Day': end.day,
+            'State_Year': save_state.year,
+            'State_Month': save_state.month,
+            'State_Day': save_state.day,
+            'In_State': in_state,
+            'State_Path': config_dict[section]['StatePath'],
+            'Result_Path': config_dict[section]['OutputDirRoot']}
+        # run the forecast separately for each ensemble member
+    if section == 'MED_FCST':
+        for ensemble_member in ['00_1', '00_2', '00_3', '00_4',
+                                '06_1', '06_2', '06_3', '06_4',
+                                 '12_1', '12_2', '12_3', '12_4',
+                                '18_1', '18_2', '18_3', '18_4']:
+            forcing_prefix = os.path.join(
+                config_dict[section]['Subd_Out_Dir'], ensemble_member,
+               'forcing_{0}-{1}.'.format(vic_start_date.replace('-', ''),
+                                  vic_end_date.replace('-', '')))
+            kwargs['Forcing_Prefix'] = forcing_prefix
 
-    model_tools.replace_var_pythonic_config(
-        global_template, global_file_path, header=None, **kwargs)
+            out_path = os.path.join(config_dict[section]['OutputDirRoot'],
+                                                 ensemble_member)
+            os.makedirs(out_path, exist_ok=True)
+            kwargs['Result_Path'] = out_path
+            model_tools.replace_var_pythonic_config(
+                global_template, global_file_path, header=None, **kwargs)
+            subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
+                    str(config_dict['ECFLOW']['Cores']),
+                    config_dict['ECFLOW']['Executable'], '-g',
+                    global_file_path])
+    else:
+        kwargs['Forcing_Prefix'] = forcing_prefix
+        model_tools.replace_var_pythonic_config(
+            global_template, global_file_path, header=None, **kwargs)
 
     # Use subprocess to submit the following command, with
     # mpirun executable, ncores, and vic executable read from
     # configuration file:
     # mpirun -np 16 vic_image.exe -g global_file
-    subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
+        subprocess.run([config_dict['ECFLOW']['MPIExec'], '-np',
                     str(config_dict['ECFLOW']['Cores']),
                     config_dict['ECFLOW']['Executable'], '-g',
                     global_file_path])

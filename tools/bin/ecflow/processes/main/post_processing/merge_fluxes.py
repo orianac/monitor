@@ -73,7 +73,10 @@ def main():
         vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(start_date_format))
         # first file should end at vic_save_state
         year = (vic_save_state - timedelta(days=1)).year
+        print(year)
+        print(start_date.year)
         if year < start_date.year:
+            print('here!')
             merged = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
             if os.path.isfile(merged) and os.path.isfile(vic_out):
                 tmp1 = os.path.join(config_dict['ECFLOW']['TempDir'],
@@ -87,19 +90,30 @@ def main():
                 os.remove(tmp1)
         # second file starts at vic_save_state
         vic_out = os.path.join(vic_dir, 'fluxes.{}.nc'.format(vic_save_state_format))
-        for year in range(vic_save_state.year, end_date.year + 1):
+        for given_year in range(vic_save_state.year, end_date.year + 1):
             # merge data into file from same year
-            merged = os.path.join(vic_dir, 'fluxes.{}.nc'.format(year))
-            if os.path.isfile(merged) and os.path.isfile(vic_out):
-                tmp1 = os.path.join(config_dict['ECFLOW']['TempDir'],
-                                    'temp_select{}.nc'.format(year))
-                cdo.seltime(year, input=vic_out, output=tmp1)
-                tmpout = os.path.join(config_dict['ECFLOW']['TempDir'],
-                                      'temp_merge{}.nc'.format(year))
-                cdo.mergetime(input='{0} {1}'.format(tmp1, merged),
-                              output=tmpout)
-                os.rename(tmpout, merged)
-                os.remove(tmp1)
+            print(vic_save_state.year)
+            print(end_date.year + 1)
+            merged = os.path.join(vic_dir, 'fluxes.{}.nc'.format(given_year))
+            if os.path.isfile(vic_out):
+                if os.path.isfile(merged):
+                    print(vic_out)
+                    print(type(given_year))
+                    tmp1 = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                    'temp_select{}.nc'.format(given_year))
+                    cdo.selyear(given_year, input=vic_out, output=tmp1)
+                    print(tmp1)
+                    tmpout = os.path.join(config_dict['ECFLOW']['TempDir'],
+                                          'temp_merge{}.nc'.format(year))
+                    print(tmpout)
+                    print(merged)
+                    cdo.mergetime(input='{0} {1}'.format(tmp1, merged),
+                                  output=tmpout)
+                    os.rename(tmpout, merged)
+                    os.remove(tmp1)
+                else:
+                    cdo.selyear(given_year, input=vic_out, output=merged)
+
 
 
 if __name__ == "__main__":
