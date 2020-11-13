@@ -158,6 +158,10 @@ def main():
         for attr in ['VIC_Model_Version', 'VIC_Driver',
                      'references', 'Conventions', 'VIC_GIT_VERSION']:
             percentiles.attrs[attr] = curr_xds.attrs[attr]
+        try:
+            percentiles = percentiles.drop('time')
+        except:
+            print('no time dimension for var {}'.format(var))
         print('save file')
         outfile = os.path.join(
             config_dict[section]['Percentile_Loc'],

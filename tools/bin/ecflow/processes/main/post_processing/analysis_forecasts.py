@@ -126,7 +126,7 @@ def main():
                 start_date_format))
         print('open {}'.format(infile))
 # this will open all of the different runs (we'll use this for the probability calculations down below)
-        ensemble_xds = xr.open_mfdataset('/civil/hydro/climate_toolbox/run_vic/output/med_fcst/us/*/fluxes.{}.nc'.format(start_date_format), concat_dim='ensemble_member')
+        ensemble_xds = xr.open_mfdataset('/pool0/data/orianac/climate_toolbox/run_vic/output/med_fcst/us/*/fluxes.{}.nc'.format(start_date_format), concat_dim='ensemble_member')
         ensemble_xds = ensemble_xds.assign_coords(ensemble_member=['ensemble_{}'.format(i) for i in range(16)])
         forecast_xds = ensemble_xds.mean(dim='ensemble_member')
         forecast_xds.to_netcdf(os.path.join(config_dict[section]['OutputDirRoot'], 'mean_fluxes.{}.nc'.format(start_date_format)))

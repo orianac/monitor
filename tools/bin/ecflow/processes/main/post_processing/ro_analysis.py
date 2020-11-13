@@ -193,6 +193,8 @@ def main():
     lats = curr_year_xds.lat
     lons = curr_year_xds.lon
     shared_attrs = curr_year_xds.attrs
+    print(curr_runoff['dayofyear'])
+    print(curr_runoff)
     day = curr_runoff['dayofyear'].loc[dict(time=analysis_date_format)]
     for agg in [7, 15, 30, 60, 90]:
         print('process {} days'.format(agg))
