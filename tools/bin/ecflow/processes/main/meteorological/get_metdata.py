@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 get_metdata.py
 usage: <python> <get_metdata.py> <configuration.cfg>
@@ -14,20 +13,65 @@ import cf_units
 from cdo import Cdo
 import xarray as xr
 import numpy as np
-
+from collections import OrderedDict
+import configobj
+from configparser import SafeConfigParser
+#from .pycompat import OrderedDict, SafeConfigParser
 from tonic.io import read_config
-from monitor import model_tools
+#from monitor import model_tools
+
+import sys
+print(sys.path)
+
+def file_chmod(infile, mode='664'):
+    '''Changes file privileges with default of -rw-rw-r--. Convert mode from
+    string to base-8  to be compatible with python 2 and python 3.'''
+    os.chmod(infile, int(mode, 8))
+
+def replace_var_pythonic_config(src, dst, header=None, **kwargs):
+    ''' Python style ASCII configuration file from src to dst. Dost not remove
+    comments or empty lines. Replace keywords in brackets with variable values
+    in **kwargs dict. '''
+    with open(src, 'r') as fsrc:
+        with open(dst, 'w') as fdst:
+            lines = fsrc.readlines()
+            if header is not None:
+                fdst.write(header)
+            for line in lines:
+                line = line.format(**kwargs)
+                fdst.write(line)
+    file_chmod(dst)
+
+#def read_config(config_file, default_config=None):
+#    """
+#    Return a dictionary with subdictionaries of all configFile options/values
+#    """
+#    config = SafeConfigParser()
+#    config.optionxform = str
+#    config.read(config_file)
+#    sections = config.sections()
+#    dict1 = OrderedDict()
+#    for section in sections:
+#        options = config.options(section)
+#        dict2 = OrderedDict()
+#        for option in options:
+#            dict2[option] = config_type(config.get(section, option))
+#        dict1[section] = dict2
+#
+#    if default_config is not None:
+#        for name, section in dict1.items():
+#            if name in default_config.keys():
+#                for option, key in default_config[name].items():
+#                    if option not in section.keys():
+#                        dict1[name][option] = key
 
 
 def define_url(var, year, num_lon, num_lat, num_day):
     ''' create url for Northwest Knowlegdge Network gridMet download '''
-    #return ('http://thredds.northwestknowledge.net:8080/thredds/dodsC/MET/tmmx/tmmx_2019.nc?lon[30:30:1],lat[1:1:40],day[1:1:1],crs[0:1:0],air_temperature[30:30:1][1:1:40][1:1:1]')
     return ('http://thredds.northwestknowledge.net:8080/thredds/dodsC/MET/' +
-    #return ('http://reacchdb.nkn.uidaho.edu:/space/obj1/netcdf/MET/data/' +
             '{0}/{0}_{1}.nc?lon[0:1:{2}],lat[0:1:{3}],day[{4}:1:{5}],'.format(
                 var[0], year, num_lon, num_lat, num_day[0], num_day[1]) +
             'crs[0:1:0],{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
-            #'{0}[{1}:1:{2}][0:1:{3}][0:1:{4}]'.format(
                 var[1], num_day[0], num_day[1], num_lat, num_lon))
 
 
@@ -62,7 +106,7 @@ def main():
     end_date = datetime.now() - timedelta(days=n_days)
     next_day = end_date + timedelta(days=1)
     end_date_format = end_date.strftime('%Y-%m-%d')
-    num_day = end_date.timetuple().tm_yday - 1  # python 0 start correction
+    num_day = end_date.timetuple().tm_yday - 1 # python 0 start correction
 
     # get VIC start date and the date to save the state
     # the last 60 days in the met dataset are provisional, so we start our run
@@ -74,7 +118,8 @@ def main():
     # we save the state at the beginning of the first provisional day
     vic_save_state = vic_start_date + timedelta(days=1)
     vic_save_state_format = vic_save_state.strftime('%Y-%m-%d')
-
+    print('this is the start date {}'.format(vic_start_date))
+    print('this is the end date {}'.format(end_date))
     num_startofyear = 0
     if calendar.isleap(vic_start_date.year):
         num_endofyear = 365
@@ -105,8 +150,10 @@ def main():
               'SEAS_END_DATE': '-9999',
               'SEAS_VIC_SAVE_STATE': '-9999',
               'FULL_YEAR': 'Year'}
-    model_tools.replace_var_pythonic_config(old_config_file, new_config_file,
+    print('replacing!')
+    replace_var_pythonic_config(old_config_file, new_config_file,
                                             header=None, **kwargs)
+    print('replaced!')
     met_dsets = dict()
     if vic_start_date.year != end_date.year:
         num_startofyear = 0
@@ -136,7 +183,11 @@ def main():
 
             url = define_url(var, end_date.year, num_lon, num_lat,
                              [vic_start_date_num, num_day])
+            print('this is the url')
             print(url)
+            print('this was it!')
+            print(type(url))
+            
             # download data and add general attributes
             xds = xr.open_dataset(url)
 
@@ -182,11 +233,15 @@ def main():
     # write merge_ds to a temporary file so that we don't run into
     # issues with the system /tmp directoy filling up
     temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_out')
+    print('this is writing!')
+    print(merge_ds)
+    print(temporary)
     merge_ds.to_netcdf(temporary)
     print('writing out to {0} mapped to {1}'.format(met_out, grid_file))
     # conservatively remap to grid file
     cdo.remapcon(grid_file, input=temporary, output=met_out)
-    os.remove(temporary)
+    
+    #os.remove(temporary)
     ds = xr.open_dataset(met_out).load()
     ds.close()
     tmin = np.copy(ds['tmmn'].values)

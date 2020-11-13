@@ -122,24 +122,27 @@ def main():
             xds = retrieve_data(var, state_start_year, num_lon, num_lat,
                              (state_start_day_num, state_end_day_num))
             # download data and add general attributes
-            #xds = xr.open_dataset(url)
             # place data in dict, the variable abbreviation is used as key
             met_dsets[var[0]] = xds
     for var in ('tmmn', 'tmmx'):
         # Perform units conversion from K to degC
         units_in = cf_units.Unit(met_dsets[var].air_temperature.attrs['units'])
         units_out = cf_units.Unit('degC')
+        print('converting now')
         units_in.convert(met_dsets[var].air_temperature.values[:], units_out,
                          inplace=True)
         # Fix _FillValue after unit conversion
+        print('fixing air temp')
         met_dsets[var].air_temperature.values[
             met_dsets[var].air_temperature < -30000] = -32767.
         met_dsets[var].air_temperature.attrs['units'] = 'degC'
-        # Change variable names so that tmmn and tmax are different
+     #    Change variable names so that tmmn and tmax are different
         met_dsets[var].rename({'air_temperature': var}, inplace=True)
-
+    print('done with variables!')
     merge_ds = xr.merge(list(met_dsets.values()))
+    print(merge_ds)
     # MetSim requires time dimension be named "time"
+    print('merged!')
     merge_ds.rename({'day': 'time', 'tmmn': 't_min', 'tmmx': 't_max',
                      'precipitation_amount': 'prec'}, inplace=True)
     # Make sure tmax >= tmin always
@@ -151,15 +154,20 @@ def main():
         print('MINOR WARNING: tmax < tmin in {} cases'.format(nswap))
     merge_ds['t_min'].values[swap_values] = tmax[swap_values]
     merge_ds['t_max'].values[swap_values] = tmin[swap_values]
+    print(merge_ds.time)
     # write merge_ds to a temporary file so that we don't run into
     # issues with the system /tmp directoy filling up
     temporary = os.path.join(config_dict['ECFLOW']['TempDir'], 'met_state')
     merge_ds.to_netcdf(temporary)
     # conservatively remap to grid file
     cdo.remapcon(grid_file, input=temporary, output=met_state)
+    print('this is after remap')
     os.remove(temporary)
     ds = xr.open_dataset(met_state).load()
+    print(ds.time)
     ds.close()
+    print('this is after reload')
+    print(ds.time)
     tmin = np.copy(ds['t_min'].values)
     tmax = np.copy(ds['t_max'].values)
     swap_values = ((tmin > tmax) & (tmax != -32767.))

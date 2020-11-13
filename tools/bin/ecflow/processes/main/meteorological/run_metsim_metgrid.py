@@ -11,9 +11,32 @@ from datetime import datetime, timedelta
 import pandas as pd
 import xarray as xr
 import numpy as np
-from monitor import model_tools
+#from monitor import model_tools
 from chunk_forcings import save_metsim_by_year
 from tonic.io import read_config
+import os.path
+#from .os_tools import file_chmod
+
+def file_chmod(infile, mode='664'):
+    '''Changes file privileges with default of -rw-rw-r--. Convert mode from
+    string to base-8  to be compatible with python 2 and python 3.'''
+    os.chmod(infile, int(mode, 8))
+
+def replace_var_pythonic_config(src, dst, header=None, **kwargs):
+    ''' Python style ASCII configuration file from src to dst. Dost not remove
+    comments or empty lines. Replace keywords in brackets with variable values
+    in **kwargs dict. '''
+    with open(src, 'r') as fsrc:
+        with open(dst, 'w') as fdst:
+            lines = fsrc.readlines()
+            if header is not None:
+                fdst.write(header)
+            for line in lines:
+                line = line.format(**kwargs)
+                fdst.write(line)
+    file_chmod(dst)
+
+
 
 # read in configuration file
 parser = argparse.ArgumentParser(description='Create configuration file ' +
@@ -79,12 +102,12 @@ if section == 'MED_FCST':
         kwargs['FORCING'] = forcing_path+'/us/'+ensemble_member+'/'+model+'.'+ensemble_member+'.'+start_date+'.nc'
         kwargs['OUTDIR'] = out_dir + '/' + ensemble_member + '/'
         os.makedirs(kwargs['OUTDIR'], exist_ok=True)
-        model_tools.replace_var_pythonic_config(
+        replace_var_pythonic_config(
             old_config_file, new_config_file, header=None, **kwargs)
         subprocess.check_call(['ms', new_config_file, '-n', '15'])
         save_metsim_by_year(new_config_file)
 else:
-    model_tools.replace_var_pythonic_config(
+    replace_var_pythonic_config(
         old_config_file, new_config_file, header=None, **kwargs)
     print(os.environ['PATH'])
     subprocess.check_call(['ms', new_config_file, '-n', '15'])

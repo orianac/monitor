@@ -20,7 +20,6 @@ import cf_units
 import numpy as np
 
 from tonic.io import read_config
-from monitor import model_tools
 
 
 def read_and_convert_data(model, var):

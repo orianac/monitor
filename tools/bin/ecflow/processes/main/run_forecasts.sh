@@ -17,14 +17,14 @@ sed "s/DAYS_BEHIND/${number}/" ${configdir}/python_US_template.cfg > ${configdir
 
 # run get_metstate
 
-python ${scriptdir}/meteorological/get_med_metfcst.py ${configdir}/working_python_US.cfg
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/meteorological/get_med_metfcst.py ${configdir}/working_python_US.cfg
 
-python ${scriptdir}/meteorological/run_metsim_metgrid.py ${configdir}/working_python_US.cfg MED_FCST
-python ${scriptdir}/models/prep_and_run_vic.py ${configdir}/working_python_US.cfg MED_FCST
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/meteorological/run_metsim_metgrid.py ${configdir}/working_python_US.cfg MED_FCST
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/models/prep_and_run_vic.py ${configdir}/working_python_US.cfg MED_FCST
 
-python ${scriptdir}/post_processing/merge_forecasts.py ${configdir}/working_python_US.cfg MED_FCST
-python ${scriptdir}/post_processing/analysis_forecasts.py ${configdir}/working_python_US.cfg MED_FCST
-python ${scriptdir}/post_processing/file_transfer.py ${configdir}/working_python_US.cfg MED_FCST
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/post_processing/merge_forecasts.py ${configdir}/working_python_US.cfg MED_FCST
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/post_processing/analysis_forecasts.py ${configdir}/working_python_US.cfg MED_FCST
+/pool0/data/orianac/scripts/miniconda3/envs/climate_toolbox/bin/python ${scriptdir}/post_processing/file_transfer.py ${configdir}/working_python_US.cfg MED_FCST
 # run metsim_metgrid - this works!!
 
 #source activate climate_toolbox

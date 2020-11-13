@@ -9,22 +9,21 @@ https://tds-proxy.nkn.uidaho.edu/thredds/fileServer/
 delivered through OPeNDAP. Because attributes are lost during download,
 they are added back in. To start, we just download multi-model ensemble mean.
 '''
-print('herebegin')
 import os
 import argparse
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
-print('xarray')
-import xarray as xr
 from cdo import Cdo
+import xarray as xr
 import cf_units
 from itertools import product
-print('during')
 from tonic.io import read_config
-from monitor import model_tools
 
-print('after')
+import sys
+
+print(sys.path)
+
 def main():
     ''' Download meteorological forecast data for 90-day forecast
         from http://thredds.northwestknowledge.net:8080/thredds/catalog/
@@ -101,7 +100,8 @@ def main():
         swap_values = ((tmin > tmax) & (tmax != -32767.))
         merge_ds['tmmn'].values[swap_values] = tmax[swap_values]
         merge_ds['tmmx'].values[swap_values] = tmin[swap_values]
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = (datetime.now()).strftime('%Y-%m-%d')
+        print('today is {}'.format(today))
         outfile = os.path.join(met_fcst_loc,ensemble_member, 'CFSv2.%s.%s.nc' % (ensemble_member, today))
         print('Conservatively remap and write to {0}'.format(outfile))
         # write merge_ds to a temporary file so that we don't run into
