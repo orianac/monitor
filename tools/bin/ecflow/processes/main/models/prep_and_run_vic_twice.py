@@ -13,8 +13,26 @@ from datetime import timedelta
 from dateutil.parser import parse
 
 from tonic.io import read_config
-from monitor import model_tools
+#from monitor import model_tools
 
+def file_chmod(infile, mode='664'):
+    '''Changes file privileges with default of -rw-rw-r--. Convert mode from
+    string to base-8  to be compatible with python 2 and python 3.'''
+    os.chmod(infile, int(mode, 8))
+
+def replace_var_pythonic_config(src, dst, header=None, **kwargs):
+    ''' Python style ASCII configuration file from src to dst. Dost not remove
+    comments or empty lines. Replace keywords in brackets with variable values
+    in **kwargs dict. '''
+    with open(src, 'r') as fsrc:
+        with open(dst, 'w') as fdst:
+            lines = fsrc.readlines()
+            if header is not None:
+                fdst.write(header)
+            for line in lines:
+                line = line.format(**kwargs)
+                fdst.write(line)
+    file_chmod(dst)
 
 def main():
     ''' Write VIC configuration file with correct start and end date, and run
@@ -74,7 +92,7 @@ def main():
         'Result_Path': config_dict[section]['OutputDirRoot'],
         'Forcing_Prefix': forcing_prefix}
 
-    model_tools.replace_var_pythonic_config(
+    replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
     # Use subprocess to submit the following command, with
@@ -108,7 +126,7 @@ def main():
         'Result_Path': config_dict[section]['OutputDirRoot'],
         'Forcing_Prefix': forcing_prefix}
 
-    model_tools.replace_var_pythonic_config(
+    replace_var_pythonic_config(
         global_template, global_file_path, header=None, **kwargs)
 
     # Use subprocess to submit the following command, with
